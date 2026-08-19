@@ -1,0 +1,30 @@
+import 'dart:io';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:verb_app/core/settings/local_settings.dart';
+
+void main() {
+  test('默认值 + 读写持久化', () async {
+    final dir = Directory.systemTemp.createTempSync('verb_set_');
+    try {
+      final f = File('${dir.path}/settings.json');
+      final s = LocalSettings(f);
+      expect(s.language, 'zh');
+      expect(s.notifyDefaultOffsetMin, 30);
+      s.language = 'en';
+      s.llmBaseUrl = 'https://example.com/v1';
+      s.llmKey = 'k123';
+      s.llmEnabled = 1;
+      s.notifyDefaultOffsetMin = 60;
+      await s.save();
+
+      final s2 = LocalSettings(f); // 重读
+      expect(s2.language, 'en');
+      expect(s2.llmBaseUrl, 'https://example.com/v1');
+      expect(s2.llmKey, 'k123');
+      expect(s2.llmEnabled, 1);
+      expect(s2.notifyDefaultOffsetMin, 60);
+    } finally {
+      dir.deleteSync(recursive: true);
+    }
+  });
+}

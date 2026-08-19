@@ -4,6 +4,8 @@ import '../core/models/models.dart';
 import '../core/services/task_service.dart';
 import '../core/nlp/nlp_service.dart';
 import '../core/storage/repository.dart';
+import 'pages/task_edit_page.dart';
+import 'pages/recycle_bin_page.dart';
 
 class HomePage extends StatefulWidget {
   final TaskRepository repository;
@@ -70,6 +72,19 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _openBin() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => RecycleBinPage(service: _tasks)));
+    await _reload();
+  }
+
+  Future<void> _openEdit(Task t) async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => TaskEditPage(task: t, service: _tasks)),
+    );
+    if (changed == true) await _reload();
+  }
+
   void _chooseLanguage() {
     showDialog<void>(
       context: context,
@@ -96,6 +111,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Text(l.appTitle),
         actions: [
+          IconButton(icon: const Icon(Icons.delete), tooltip: '回收站', onPressed: _openBin),
           IconButton(icon: const Icon(Icons.translate), tooltip: l.language, onPressed: _chooseLanguage),
           IconButton(icon: const Icon(Icons.update), tooltip: l.quickSync, onPressed: () {}),
         ],
@@ -131,6 +147,7 @@ class _HomePageState extends State<HomePage> {
                     itemBuilder: (c, i) {
                       final t = _items[i];
                       return ListTile(
+                        onTap: () => _openEdit(t),
                         leading: Checkbox(
                           value: t.status == TaskStatus.done,
                           onChanged: (v) async { await _tasks.setDone(t, v ?? false); await _reload(); },
