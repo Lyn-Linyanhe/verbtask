@@ -12,7 +12,8 @@ class VerbApp extends StatefulWidget {
   final TaskRepository? repository;
   final Locale? initialLocale;
   final SettingsController? settings;
-  const VerbApp({super.key, this.repository, this.initialLocale, this.settings});
+  final VoidCallback? onQuickSync;
+  const VerbApp({super.key, this.repository, this.initialLocale, this.settings, this.onQuickSync});
 
   @override
   State<VerbApp> createState() => _VerbAppState();
@@ -50,9 +51,10 @@ class _VerbAppState extends State<VerbApp> {
         locale: _locale,
         onLocaleChanged: (l) => setState(() => _locale = l),
         settings: _settings,
-        onQuickSync: () {},
+        onQuickSync: widget.onQuickSync ?? () {},
       ),
     );
   }
 }
+
 
