@@ -1,0 +1,148 @@
+import 'package:flutter/material.dart';
+import '../l10n/generated/app_localizations.dart';
+import '../core/models/models.dart';
+import '../core/services/task_service.dart';
+import '../core/nlp/nlp_service.dart';
+import '../core/storage/repository.dart';
+
+class HomePage extends StatefulWidget {
+  final TaskRepository repository;
+  final Locale locale;
+  final ValueChanged<Locale> onLocaleChanged;
+  const HomePage({super.key, required this.repository, required this.locale, required this.onLocaleChanged});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  late TaskService _tasks;
+  final NlpService _nlp = NlpService();
+  List<Task> _items = [];
+  String _tab = 'inbox';
+  final TextEditingController _input = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _tasks = TaskService(widget.repository);
+    _reload();
+  }
+
+  Future<void> _reload() async {
+    final all = await _tasks.query(includeDeleted: false);
+    if (!mounted) return;
+    setState(() {
+      _items = switch (_tab) {
+        'inbox' => all.where((t) => t.isInInbox).toList(),
+        'done' => all.where((t) => t.status == TaskStatus.done).toList(),
+        _ => all.where((t) => !t.isInInbox).toList(),
+      };
+    });
+  }
+
+  Future<void> _quickAdd(String text) async {
+    final r = _nlp.parseLocal(text);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.of(ctx).addTask),
+        content: Text(
+          '标题: ${r.title ?? '（未识别）'}\n'
+          '截止: ${r.due?.value ?? '（无）'}\n'
+          '重复: ${r.rrule ?? '（无）'}',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('确认')),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _tasks.create(
+        title: r.title ?? text,
+        due: r.due,
+        rrule: r.rrule,
+        priority: r.priority ?? 0,
+      );
+      _input.clear();
+      await _reload();
+    }
+  }
+
+  void _chooseLanguage() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(AppLocalizations.of(ctx).language),
+        children: [
+          SimpleDialogOption(
+            onPressed: () { widget.onLocaleChanged(const Locale('zh')); Navigator.pop(ctx); },
+            child: const Text('中文'),
+          ),
+          SimpleDialogOption(
+            onPressed: () { widget.onLocaleChanged(const Locale('en')); Navigator.pop(ctx); },
+            child: const Text('English'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l.appTitle),
+        actions: [
+          IconButton(icon: const Icon(Icons.translate), tooltip: l.language, onPressed: _chooseLanguage),
+          IconButton(icon: const Icon(Icons.update), tooltip: l.quickSync, onPressed: () {}),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: _input,
+              onSubmitted: _quickAdd,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: l.addTask,
+                prefixIcon: const Icon(Icons.add_task_outlined),
+              ),
+            ),
+          ),
+          SegmentedButton<String>(
+            segments: [
+              ButtonSegment(value: 'inbox', label: Text(l.inbox)),
+              ButtonSegment(value: 'list', label: Text(l.lists)),
+              ButtonSegment(value: 'done', label: Text(l.done)),
+            ],
+            selected: {_tab},
+            onSelectionChanged: (s) { setState(() => _tab = s.first); _reload(); },
+          ),
+          Expanded(
+            child: _items.isEmpty
+                ? const Center(child: Text('暂无任务'))
+                : ListView.builder(
+                    itemCount: _items.length,
+                    itemBuilder: (c, i) {
+                      final t = _items[i];
+                      return ListTile(
+                        leading: Checkbox(
+                          value: t.status == TaskStatus.done,
+                          onChanged: (v) async { await _tasks.setDone(t, v ?? false); await _reload(); },
+                        ),
+                        title: Text(t.title),
+                        subtitle: t.due != null ? Text('截止: ${t.due!.value.toLocal()}') : null,
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}

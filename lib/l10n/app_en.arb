@@ -1,0 +1,14 @@
+{
+  "@@locale": "en",
+  "appTitle": "Verb Task",
+  "inbox": "Inbox",
+  "lists": "Lists",
+  "todo": "To Do",
+  "doing": "In Progress",
+  "done": "Done",
+  "addTask": "Add a task…",
+  "settings": "Settings",
+  "language": "Language",
+  "quickSync": "Quick Sync",
+  "search": "Search"
+}

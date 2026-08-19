@@ -1,0 +1,14 @@
+{
+  "@@locale": "zh",
+  "appTitle": "任务清单",
+  "inbox": "收件箱",
+  "lists": "清单",
+  "todo": "未开始",
+  "doing": "进行中",
+  "done": "已完成",
+  "addTask": "添加任务…",
+  "settings": "设置",
+  "language": "语言",
+  "quickSync": "快速同步",
+  "search": "搜索"
+}

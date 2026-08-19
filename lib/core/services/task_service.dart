@@ -17,6 +17,7 @@ class TaskService {
     TaskStatus status = TaskStatus.todo,
     String? rrule,
     List<Reminder> reminders = const [],
+    int priority = 0,
   }) async {
     final now = DateTime.now().toUtc();
     final task = Task(
@@ -28,6 +29,7 @@ class TaskService {
       status: status,
       rrule: rrule,
       reminders: reminders,
+      priority: priority,
       createdAt: now,
       updatedAt: now,
       version: 1,
@@ -112,3 +114,4 @@ class TaskService {
 const Object _sentinel = Object();
 
 enum BySort { dueAsc, createdDesc }
+
