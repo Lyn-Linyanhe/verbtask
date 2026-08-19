@@ -84,31 +84,39 @@ class FileRepository implements TaskRepository {
 
   @override
   Future<void> upsertTask(Task task) async {
-    final idx = _tasks.indexWhere((t) => t.id == task.id);
+    final nextTasks = List<Task>.of(_tasks);
+    final idx = nextTasks.indexWhere((t) => t.id == task.id);
     if (idx >= 0) {
-      _tasks[idx] = task;
+      nextTasks[idx] = task;
     } else {
-      _tasks.add(task);
+      nextTasks.add(task);
     }
-    _changes.add(Change(
-      changeId: task.changeId,
-      taskId: task.id,
-      kind: task.deleted ? 'delete' : 'upsert',
-      timestamp: task.updatedAt,
-      version: task.version,
-    ));
-    await _persist();
+    final nextChanges = List<Change>.of(_changes)
+      ..add(Change(
+        changeId: task.changeId,
+        taskId: task.id,
+        kind: task.deleted ? 'delete' : 'upsert',
+        timestamp: task.updatedAt,
+        version: task.version,
+      ));
+    await _persist(tasks: nextTasks, changes: nextChanges);
+    _tasks = nextTasks;
+    _changes
+      ..clear()
+      ..addAll(nextChanges);
   }
 
   @override
   Future<void> upsertList(TaskList list) async {
-    final idx = _lists.indexWhere((l) => l.id == list.id);
+    final nextLists = List<TaskList>.of(_lists);
+    final idx = nextLists.indexWhere((l) => l.id == list.id);
     if (idx >= 0) {
-      _lists[idx] = list;
+      nextLists[idx] = list;
     } else {
-      _lists.add(list);
+      nextLists.add(list);
     }
-    await _persist();
+    await _persist(lists: nextLists);
+    _lists = nextLists;
   }
 
   @override
@@ -148,14 +156,16 @@ class FileRepository implements TaskRepository {
 
   @override
   Future<void> removeList(String id) async {
-    _lists.removeWhere((list) => list.id == id);
-    await _persist();
+    final nextLists = _lists.where((list) => list.id != id).toList();
+    await _persist(lists: nextLists);
+    _lists = nextLists;
   }
 
   @override
   Future<void> removeTask(String id) async {
-    _tasks.removeWhere((t) => t.id == id);
-    await _persist();
+    final nextTasks = _tasks.where((task) => task.id != id).toList();
+    await _persist(tasks: nextTasks);
+    _tasks = nextTasks;
   }
 
   @override

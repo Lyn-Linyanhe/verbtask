@@ -53,6 +53,41 @@ void main() {
     expect(await f.readAsString(), before);
   });
 
+  test('普通写入失败时同一仓库的任务和变更日志不变', () async {
+    final f = File('${dir.path}/state.json');
+    final repo = FileRepository(f);
+    final original = Task(
+      id: 'a',
+      title: '已有任务',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 2),
+    );
+    await repo.upsertTask(original);
+    final list = TaskList(
+      id: 'l',
+      name: '已有清单',
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+    await repo.upsertList(list);
+    await Directory('${f.path}.tmp').create();
+
+    await expectLater(
+      repo.upsertTask(Task(
+        id: 'b',
+        title: '不会落盘',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 2),
+      )),
+      throwsA(isA<FileSystemException>()),
+    );
+
+    expect((await repo.allTasks()).map((task) => task.id), ['a']);
+    expect((await repo.allLists()).single.id, list.id);
+    final changes = await repo.changesSince(null);
+    expect(changes.length, 1);
+    expect(changes.single.changeId, original.changeId);
+  });
+
   test('删除清单的批量写入失败时不产生部分迁移', () async {
     final f = File('${dir.path}/data.json');
     final repo = FileRepository(f);
@@ -71,6 +106,29 @@ void main() {
     expect((await reloaded.allLists()).single.id, list.id);
     expect((await reloaded.allTasks()).every((task) => task.listId == list.id),
         isTrue);
+  });
+
+  test('删除清单成功后为每个迁移任务保留变更日志', () async {
+    final f = File('${dir.path}/changes.json');
+    final repo = FileRepository(f);
+    final service = TaskService(repo);
+    final list = await service.createList(name: '工作');
+    final first = await service.create(title: '一号', listId: list.id);
+    final second = await service.create(title: '二号', listId: list.id);
+
+    await service.deleteList(list);
+
+    final changes = await repo.changesSince(null);
+    final moved = changes
+        .where(
+            (change) => change.taskId == first.id || change.taskId == second.id)
+        .toList();
+    expect(moved.length, 4);
+    expect(moved.skip(2).every((change) => change.kind == 'upsert'), isTrue);
+    expect(moved.skip(2).map((change) => change.changeId).toSet().length, 2);
+
+    final reloaded = FileRepository(f);
+    expect((await reloaded.changesSince(null)).length, changes.length);
   });
 
   test('旧 JSON 缺少 changeId 仍可读取', () {
