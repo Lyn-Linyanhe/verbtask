@@ -25,8 +25,19 @@ class AppNotifications {
   static Future<void> rescheduleAll(
     TaskRepository repo, {
     int? defaultOffsetMinutes,
+    bool initializeIfNeeded = false,
   }) async {
-    final s = _sink;
+    var s = _sink;
+    if (s == null &&
+        initializeIfNeeded &&
+        (Platform.isAndroid || Platform.isWindows)) {
+      try {
+        s = await PlatformNotificationSink.create(requestPermission: false);
+        _sink = s;
+      } catch (_) {
+        s = null;
+      }
+    }
     if (s == null) return;
     try {
       await ReminderService(tasks: TaskService(repo), sink: s).syncReminders(

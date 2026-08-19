@@ -9,7 +9,9 @@ class PlatformNotificationSink implements NotificationSink {
   final FlutterLocalNotificationsPlugin _plugin;
   PlatformNotificationSink._(this._plugin);
 
-  static Future<PlatformNotificationSink> create() async {
+  static Future<PlatformNotificationSink> create({
+    bool requestPermission = true,
+  }) async {
     tzdata.initializeTimeZones();
     final plugin = FlutterLocalNotificationsPlugin();
     const init = InitializationSettings(
@@ -21,7 +23,7 @@ class PlatformNotificationSink implements NotificationSink {
       ),
     );
     await plugin.initialize(init);
-    if (Platform.isAndroid) {
+    if (requestPermission && Platform.isAndroid) {
       final android = plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       await android?.requestNotificationsPermission();

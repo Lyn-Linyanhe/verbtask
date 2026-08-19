@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:workmanager/workmanager.dart';
 import '../storage/app_paths.dart';
 import '../storage/file_repository.dart';
+import '../settings/local_settings.dart';
+import '../notifications/app_notifications.dart';
 import 'sync_controller.dart';
 
 /// 后台回调调度器：workmanager 在独立 isolate 中调用。
@@ -10,7 +12,17 @@ void backgroundCallbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
     try {
       final repo = FileRepository(await AppPaths.dataFile());
-      await SyncController.quickSync(repo);
+      final settings = LocalSettings(await AppPaths.settingsFile());
+      await SyncController.quickSync(
+        repo,
+        onSynced: () => AppNotifications.rescheduleAll(
+          repo,
+          defaultOffsetMinutes: settings.notifyDefaultReminderEnabled
+              ? settings.notifyDefaultOffsetMin
+              : null,
+          initializeIfNeeded: true,
+        ),
+      );
     } catch (_) {
       // 后台失败静默：下次周期再试
     }
@@ -35,4 +47,3 @@ class BackgroundSync {
     );
   }
 }
-

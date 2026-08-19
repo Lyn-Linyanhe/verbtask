@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'app/windows_tray.dart';
@@ -18,16 +19,23 @@ Future<void> main() async {
     LocalSettings(await AppPaths.settingsFile()),
     repo,
   );
-  await AppNotifications.init(
-    repo,
-    defaultOffsetMinutes: settings.defaultReminderOffsetMinutes,
-  );
-  await BackgroundSync.init();
   runApp(VerbApp(
     repository: repo,
     settings: settings,
-    onQuickSync: () => SyncController.quickSync(repo),
+    onQuickSync: () => SyncController.quickSync(
+      repo,
+      onSynced: () => AppNotifications.rescheduleAll(
+        repo,
+        defaultOffsetMinutes: settings.defaultReminderOffsetMinutes,
+        initializeIfNeeded: true,
+      ),
+    ),
   ));
+  unawaited(AppNotifications.init(
+    repo,
+    defaultOffsetMinutes: settings.defaultReminderOffsetMinutes,
+  ));
+  unawaited(BackgroundSync.init().catchError((_) {}));
   if (Platform.isWindows) {
     WindowsTray.init();
     SyncHost.start(repo).then((_) {}, onError: (_) {});

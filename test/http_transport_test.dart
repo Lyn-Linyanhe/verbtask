@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:verb_app/core/models/models.dart';
 import 'package:verb_app/core/storage/file_repository.dart';
 import 'package:verb_app/core/sync/http_transport.dart';
+import 'package:verb_app/core/sync/lan_discovery.dart';
+import 'package:verb_app/core/sync/sync_controller.dart';
 import 'package:verb_app/core/sync/sync_engine.dart';
 
 void main() {
@@ -16,13 +18,17 @@ void main() {
 
     // Windows(Server) 已有任务 A
     await serverRepo.upsertTask(Task(
-      id: 'A', title: '服务端任务',
-      createdAt: DateTime.utc(2026,1,1), updatedAt: DateTime.utc(2026,1,1),
+      id: 'A',
+      title: '服务端任务',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
     ));
     // Android(Client) 已有任务 B
     await clientRepo.upsertTask(Task(
-      id: 'B', title: '客户端任务',
-      createdAt: DateTime.utc(2026,1,1), updatedAt: DateTime.utc(2026,1,2),
+      id: 'B',
+      title: '客户端任务',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 2),
     ));
 
     final server = SyncServer(serverRepo);
@@ -46,12 +52,20 @@ void main() {
     final clientRepo = FileRepository(File('${dir.path}/c.json'));
     // 同一任务，Server 版本更高
     await serverRepo.upsertTask(Task(
-      id: 'X', title: '服务端新版',
-      createdAt: DateTime.utc(2026,1,1), updatedAt: DateTime.utc(2026,1,3), version: 2, changeId: 'X-v2',
+      id: 'X',
+      title: '服务端新版',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 3),
+      version: 2,
+      changeId: 'X-v2',
     ));
     await clientRepo.upsertTask(Task(
-      id: 'X', title: '客户端旧版',
-      createdAt: DateTime.utc(2026,1,1), updatedAt: DateTime.utc(2026,1,2), version: 1, changeId: 'X-v1',
+      id: 'X',
+      title: '客户端旧版',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 2),
+      version: 1,
+      changeId: 'X-v1',
     ));
 
     final server = SyncServer(serverRepo);
@@ -60,8 +74,35 @@ void main() {
     try {
       final engine = SyncEngine(clientRepo);
       await runSync(client, engine);
-      final merged = (await clientRepo.allTasks()).firstWhere((t) => t.id == 'X');
+      final merged =
+          (await clientRepo.allTasks()).firstWhere((t) => t.id == 'X');
       expect(merged.title, '服务端新版');
+    } finally {
+      await server.stop();
+    }
+  });
+
+  test('快速同步成功后调用完成回调', () async {
+    final serverRepo = FileRepository(File('${dir.path}/callback-server.json'));
+    final clientRepo = FileRepository(File('${dir.path}/callback-client.json'));
+    await serverRepo.upsertTask(Task(
+      id: 'callback',
+      title: '服务端任务',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    ));
+    final server = SyncServer(serverRepo);
+    await server.start();
+    var callbackCalled = false;
+    try {
+      final ran = await SyncController.quickSync(
+        clientRepo,
+        discover: () async => [LanPeer('127.0.0.1', server.port)],
+        onSynced: () async => callbackCalled = true,
+      );
+
+      expect(ran, 1);
+      expect(callbackCalled, isTrue);
     } finally {
       await server.stop();
     }
