@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../settings/local_settings.dart';
 import '../storage/repository.dart';
 import '../storage/backup_service.dart';
@@ -8,27 +8,77 @@ import '../storage/backup_service.dart';
 class SettingsController extends ChangeNotifier {
   final LocalSettings settings;
   final BackupService backup;
-  SettingsController(this.settings, TaskRepository repo) : backup = BackupService(repo);
+  Future<void> _pendingSave = Future<void>.value();
+  SettingsController(this.settings, TaskRepository repo)
+      : backup = BackupService(repo);
 
   String get language => settings.language;
-  set language(String v) { settings.language = v; _save(); }
+  set language(String v) {
+    settings.language = v;
+    _save();
+  }
 
   String get llmBaseUrl => settings.llmBaseUrl;
-  set llmBaseUrl(String v) { settings.llmBaseUrl = v; _save(); }
+  set llmBaseUrl(String v) {
+    settings.llmBaseUrl = v;
+    _save();
+  }
+
   String get llmKey => settings.llmKey;
-  set llmKey(String v) { settings.llmKey = v; _save(); }
+  set llmKey(String v) {
+    settings.llmKey = v;
+    _save();
+  }
+
   int get llmEnabled => settings.llmEnabled;
-  set llmEnabled(int v) { settings.llmEnabled = v; _save(); }
+  set llmEnabled(int v) {
+    settings.llmEnabled = v;
+    _save();
+  }
 
   int get syncAutoIntervalMin => settings.syncAutoIntervalMin;
-  set syncAutoIntervalMin(int v) { settings.syncAutoIntervalMin = v; _save(); }
+  set syncAutoIntervalMin(int v) {
+    settings.syncAutoIntervalMin = v;
+    _save();
+  }
+
+  bool get notifyDefaultReminderEnabled =>
+      settings.notifyDefaultReminderEnabled;
+  set notifyDefaultReminderEnabled(bool v) {
+    settings.notifyDefaultReminderEnabled = v;
+    _save();
+  }
+
   int get notifyDefaultOffsetMin => settings.notifyDefaultOffsetMin;
-  set notifyDefaultOffsetMin(int v) { settings.notifyDefaultOffsetMin = v; _save(); }
+  set notifyDefaultOffsetMin(int v) {
+    settings.notifyDefaultOffsetMin = v;
+    _save();
+  }
+
+  int? get defaultReminderOffsetMinutes =>
+      notifyDefaultReminderEnabled ? notifyDefaultOffsetMin : null;
+
+  ThemeMode get themeMode => switch (settings.themeMode) {
+        'light' => ThemeMode.light,
+        'dark' => ThemeMode.dark,
+        _ => ThemeMode.system,
+      };
+  set themeMode(ThemeMode value) {
+    settings.themeMode = value.name;
+    _save();
+  }
 
   bool get trayEnabled => settings.trayEnabled;
-  set trayEnabled(bool v) { settings.trayEnabled = v; _save(); }
+  set trayEnabled(bool v) {
+    settings.trayEnabled = v;
+    _save();
+  }
+
   bool get autostartEnabled => settings.autostartEnabled;
-  set autostartEnabled(bool v) { settings.autostartEnabled = v; _save(); }
+  set autostartEnabled(bool v) {
+    settings.autostartEnabled = v;
+    _save();
+  }
 
   Future<String> exportTo(File f) async {
     final json = await backup.exportJson();
@@ -42,8 +92,11 @@ class SettingsController extends ChangeNotifier {
     return backup.importJson(json);
   }
 
+  /// 等待此前由 setter 触发的设置写入完成。
+  Future<void> flush() => _pendingSave;
+
   void _save() {
-    settings.save(); // 异步，不阻塞 UI
+    _pendingSave = _pendingSave.then((_) => settings.save());
     notifyListeners();
   }
 }

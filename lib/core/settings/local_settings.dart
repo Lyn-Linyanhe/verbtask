@@ -8,7 +8,8 @@ class LocalSettings {
   LocalSettings(this.file) {
     if (file.existsSync()) {
       try {
-        final root = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+        final root =
+            jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
         _m.addAll(root);
       } catch (_) {}
     }
@@ -26,11 +27,21 @@ class LocalSettings {
   int get llmEnabled => (_m['llmEnabled'] as num?)?.toInt() ?? 0;
   set llmEnabled(int v) => _m['llmEnabled'] = v;
 
-  int get syncAutoIntervalMin => (_m['syncAutoIntervalMin'] as num?)?.toInt() ?? 30;
+  int get syncAutoIntervalMin =>
+      (_m['syncAutoIntervalMin'] as num?)?.toInt() ?? 30;
   set syncAutoIntervalMin(int v) => _m['syncAutoIntervalMin'] = v;
 
-  int get notifyDefaultOffsetMin => (_m['notifyDefaultOffsetMin'] as num?)?.toInt() ?? 30;
+  bool get notifyDefaultReminderEnabled =>
+      (_m['notifyDefaultReminderEnabled'] as bool?) ?? true;
+  set notifyDefaultReminderEnabled(bool v) =>
+      _m['notifyDefaultReminderEnabled'] = v;
+
+  int get notifyDefaultOffsetMin =>
+      (_m['notifyDefaultOffsetMin'] as num?)?.toInt() ?? -30;
   set notifyDefaultOffsetMin(int v) => _m['notifyDefaultOffsetMin'] = v;
+
+  String get themeMode => (_m['themeMode'] as String?) ?? 'system';
+  set themeMode(String v) => _m['themeMode'] = v;
 
   bool get trayEnabled => (_m['trayEnabled'] as bool?) ?? true;
   set trayEnabled(bool v) => _m['trayEnabled'] = v;

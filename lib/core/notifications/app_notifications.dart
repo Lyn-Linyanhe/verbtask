@@ -9,21 +9,29 @@ import 'reminder_service.dart';
 class AppNotifications {
   static NotificationSink? _sink;
 
-  static Future<void> init(TaskRepository repo) async {
+  static Future<void> init(
+    TaskRepository repo, {
+    int? defaultOffsetMinutes,
+  }) async {
     if (!Platform.isAndroid && !Platform.isWindows) return;
     try {
       _sink = await PlatformNotificationSink.create();
     } catch (_) {
       _sink = null;
     }
-    await rescheduleAll(repo);
+    await rescheduleAll(repo, defaultOffsetMinutes: defaultOffsetMinutes);
   }
 
-  static Future<void> rescheduleAll(TaskRepository repo) async {
+  static Future<void> rescheduleAll(
+    TaskRepository repo, {
+    int? defaultOffsetMinutes,
+  }) async {
     final s = _sink;
     if (s == null) return;
     try {
-      await ReminderService(tasks: TaskService(repo), sink: s).syncReminders();
+      await ReminderService(tasks: TaskService(repo), sink: s).syncReminders(
+        defaultOffsetMinutes: defaultOffsetMinutes,
+      );
     } catch (_) {}
   }
 }

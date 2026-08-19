@@ -13,7 +13,12 @@ class VerbApp extends StatefulWidget {
   final Locale? initialLocale;
   final SettingsController? settings;
   final VoidCallback? onQuickSync;
-  const VerbApp({super.key, this.repository, this.initialLocale, this.settings, this.onQuickSync});
+  const VerbApp(
+      {super.key,
+      this.repository,
+      this.initialLocale,
+      this.settings,
+      this.onQuickSync});
 
   @override
   State<VerbApp> createState() => _VerbAppState();
@@ -33,7 +38,9 @@ class _VerbAppState extends State<VerbApp> {
     _repo = widget.repository ??
         FileRepository(File('$dataDir${sep}verb_data.json'));
     _settings = widget.settings ??
-        SettingsController(LocalSettings(File('$dataDir${sep}settings.json')), _repo);
+        SettingsController(
+            LocalSettings(File('$dataDir${sep}settings.json')), _repo);
+    _themeMode = _settings.themeMode;
     if (widget.initialLocale != null) _locale = widget.initialLocale!;
   }
 
@@ -52,6 +59,7 @@ class _VerbAppState extends State<VerbApp> {
         locale: _locale,
         onLocaleChanged: (l) => setState(() => _locale = l),
         settings: _settings,
+        themeMode: _themeMode,
         onQuickSync: widget.onQuickSync,
         onThemeModeChanged: (m) => setState(() => _themeMode = m),
       ),

@@ -20,8 +20,8 @@ class ReminderScheduler {
   /// 返回 nil 表示暂无可用实例（无限期后或无法展开）。
   DateTime? nextDueForRepeating(Task task, DateTime now, RruleService rrule) {
     if (!task.isRepeating) return task.due?.value;
-    final start = task.createdAt;
+    final start = task.due?.value;
+    if (start == null) return null;
     return rrule.nextAfter(task.rrule!, now, start: start);
   }
 }
-

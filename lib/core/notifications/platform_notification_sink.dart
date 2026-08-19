@@ -21,6 +21,11 @@ class PlatformNotificationSink implements NotificationSink {
       ),
     );
     await plugin.initialize(init);
+    if (Platform.isAndroid) {
+      final android = plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      await android?.requestNotificationsPermission();
+    }
     return PlatformNotificationSink._(plugin);
   }
 
@@ -58,4 +63,3 @@ class PlatformNotificationSink implements NotificationSink {
   @override
   Future<void> cancelAll() async => _plugin.cancelAll();
 }
-

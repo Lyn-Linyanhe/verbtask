@@ -18,7 +18,10 @@ Future<void> main() async {
     LocalSettings(await AppPaths.settingsFile()),
     repo,
   );
-  await AppNotifications.init(repo);
+  await AppNotifications.init(
+    repo,
+    defaultOffsetMinutes: settings.defaultReminderOffsetMinutes,
+  );
   await BackgroundSync.init();
   runApp(VerbApp(
     repository: repo,

@@ -9,12 +9,16 @@ void main() {
       final f = File('${dir.path}/settings.json');
       final s = LocalSettings(f);
       expect(s.language, 'zh');
-      expect(s.notifyDefaultOffsetMin, 30);
+      expect(s.notifyDefaultReminderEnabled, isTrue);
+      expect(s.notifyDefaultOffsetMin, -30);
+      expect(s.themeMode, 'system');
       s.language = 'en';
       s.llmBaseUrl = 'https://example.com/v1';
       s.llmKey = 'k123';
       s.llmEnabled = 1;
-      s.notifyDefaultOffsetMin = 60;
+      s.notifyDefaultReminderEnabled = false;
+      s.notifyDefaultOffsetMin = -60;
+      s.themeMode = 'dark';
       await s.save();
 
       final s2 = LocalSettings(f); // 重读
@@ -22,7 +26,9 @@ void main() {
       expect(s2.llmBaseUrl, 'https://example.com/v1');
       expect(s2.llmKey, 'k123');
       expect(s2.llmEnabled, 1);
-      expect(s2.notifyDefaultOffsetMin, 60);
+      expect(s2.notifyDefaultReminderEnabled, isFalse);
+      expect(s2.notifyDefaultOffsetMin, -60);
+      expect(s2.themeMode, 'dark');
     } finally {
       dir.deleteSync(recursive: true);
     }

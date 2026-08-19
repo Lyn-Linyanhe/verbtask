@@ -9,13 +9,13 @@ import '../core/notifications/app_notifications.dart';
 import 'pages/task_edit_page.dart';
 import 'pages/recycle_bin_page.dart';
 import 'pages/settings_page.dart';
-import 'theme/app_theme.dart';
 
 class HomePage extends StatefulWidget {
   final TaskRepository repository;
   final Locale locale;
   final ValueChanged<Locale> onLocaleChanged;
   final SettingsController? settings;
+  final ThemeMode themeMode;
   final VoidCallback? onQuickSync;
   final ValueChanged<ThemeMode>? onThemeModeChanged;
   const HomePage({
@@ -24,6 +24,7 @@ class HomePage extends StatefulWidget {
     required this.locale,
     required this.onLocaleChanged,
     this.settings,
+    this.themeMode = ThemeMode.system,
     this.onQuickSync,
     this.onThemeModeChanged,
   });
@@ -46,7 +47,10 @@ class _HomePageState extends State<HomePage> {
     _reload();
   }
 
-  Future<void> _reschedule() => AppNotifications.rescheduleAll(widget.repository);
+  Future<void> _reschedule() => AppNotifications.rescheduleAll(
+        widget.repository,
+        defaultOffsetMinutes: widget.settings?.defaultReminderOffsetMinutes,
+      );
 
   Future<void> _reload() async {
     final all = await _tasks.query(includeDeleted: false);
@@ -66,15 +70,20 @@ class _HomePageState extends State<HomePage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(AppLocalizations.of(ctx).addTask),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Text(
           '标题: ${r.title ?? '（未识别）'}\n'
           '截止: ${r.due?.value ?? '（无）'}\n'
           '重复: ${r.rrule ?? '（无）'}',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消', style: TextStyle(color: AppColors.muted))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('确认')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('取消',
+                  style: TextStyle(
+                      color: Theme.of(ctx).colorScheme.onSurfaceVariant))),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('确认')),
         ],
       ),
     );
@@ -92,7 +101,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _openBin() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => RecycleBinPage(service: _tasks)));
+    await Navigator.push(context,
+        MaterialPageRoute(builder: (_) => RecycleBinPage(service: _tasks)));
     await _reload();
   }
 
@@ -101,15 +111,26 @@ class _HomePageState extends State<HomePage> {
       context,
       MaterialPageRoute(builder: (_) => TaskEditPage(task: t, service: _tasks)),
     );
-    if (changed == true) { await _reschedule(); await _reload(); }
+    if (changed == true) {
+      await _reschedule();
+      await _reload();
+    }
   }
 
   Future<void> _openSettings() async {
     final s = widget.settings;
     if (s == null) return;
-    await Navigator.push(context, MaterialPageRoute(
-      builder: (_) => SettingsPage(controller: s, onLocaleChanged: widget.onLocaleChanged, onQuickSync: widget.onQuickSync, onThemeModeChanged: widget.onThemeModeChanged),
-    ));
+    await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SettingsPage(
+              controller: s,
+              onLocaleChanged: widget.onLocaleChanged,
+              onQuickSync: widget.onQuickSync,
+              themeMode: widget.themeMode,
+              onThemeModeChanged: widget.onThemeModeChanged),
+        ));
+    await _reschedule();
   }
 
   void _onMenu(String value) {
@@ -152,7 +173,13 @@ class _HomePageState extends State<HomePage> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: _PillTabs(current: _tab, onChanged: (v) { setState(() => _tab = v!); _reload(); }, l: l),
+              child: _PillTabs(
+                  current: _tab,
+                  onChanged: (v) {
+                    setState(() => _tab = v!);
+                    _reload();
+                  },
+                  l: l),
             ),
             Expanded(
               child: _items.isEmpty
@@ -161,11 +188,15 @@ class _HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       itemCount: _items.length,
                       itemBuilder: (c, i) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.only(bottom: 1),
                         child: _TaskCard(
                           task: _items[i],
                           onTap: () => _openEdit(_items[i]),
-                          onToggle: (v) async { await _tasks.setDone(_items[i], v); await _reschedule(); await _reload(); },
+                          onToggle: (v) async {
+                            await _tasks.setDone(_items[i], v);
+                            await _reschedule();
+                            await _reload();
+                          },
                         ),
                       ),
                     ),
@@ -183,7 +214,12 @@ class _AppHeader extends StatelessWidget {
   final VoidCallback onRecycle;
   final ValueChanged<String> onMenu;
   final bool hasSettings;
-  const _AppHeader({required this.title, this.onQuickSync, required this.onRecycle, required this.onMenu, required this.hasSettings});
+  const _AppHeader(
+      {required this.title,
+      this.onQuickSync,
+      required this.onRecycle,
+      required this.onMenu,
+      required this.hasSettings});
 
   @override
   Widget build(BuildContext context) {
@@ -191,20 +227,40 @@ class _AppHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 12, 6, 8),
       child: Row(
         children: [
-          Expanded(child: Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.text, letterSpacing: -0.4))),
-          IconButton(tooltip: '快速同步', onPressed: onQuickSync, icon: const Icon(Icons.sync_rounded)),
-          IconButton(tooltip: '回收站', onPressed: onRecycle, icon: const Icon(Icons.delete_outline_rounded)),
+          Expanded(
+              child: Text(title,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700, letterSpacing: -0.4))),
+          IconButton(
+              tooltip: '快速同步',
+              onPressed: onQuickSync,
+              icon: const Icon(Icons.sync_rounded)),
+          IconButton(
+              tooltip: '回收站',
+              onPressed: onRecycle,
+              icon: const Icon(Icons.delete_outline_rounded)),
           PopupMenuButton<String>(
             tooltip: '更多',
             icon: const Icon(Icons.more_horiz_rounded),
             onSelected: onMenu,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             itemBuilder: (c) => [
-              if (hasSettings) const PopupMenuItem(value: 'settings', child: Row(children: [Icon(Icons.settings_outlined, size: 20, color: AppColors.muted), SizedBox(width: 10), Text('设置')])),
+              if (hasSettings)
+                PopupMenuItem(
+                    value: 'settings',
+                    child: Row(children: [
+                      Icon(Icons.settings_outlined,
+                          size: 20,
+                          color: Theme.of(c).colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 10),
+                      const Text('设置')
+                    ])),
               const PopupMenuDivider(),
-              const PopupMenuItem(value: 'zh', child: Row(children: [SizedBox(width: 2), Text('中文')])),
-              const PopupMenuItem(value: 'en', child: Row(children: [SizedBox(width: 2), Text('English')])),
+              const PopupMenuItem(
+                  value: 'zh',
+                  child: Row(children: [SizedBox(width: 2), Text('中文')])),
+              const PopupMenuItem(
+                  value: 'en',
+                  child: Row(children: [SizedBox(width: 2), Text('English')])),
             ],
           ),
         ],
@@ -217,7 +273,8 @@ class _PillTabs extends StatelessWidget {
   final String? current;
   final ValueChanged<String?> onChanged;
   final AppLocalizations l;
-  const _PillTabs({required this.current, required this.onChanged, required this.l});
+  const _PillTabs(
+      {required this.current, required this.onChanged, required this.l});
 
   @override
   Widget build(BuildContext context) {
@@ -226,33 +283,47 @@ class _PillTabs extends StatelessWidget {
       (btn: 'list', label: l.lists, icon: Icons.list_alt_rounded),
       (btn: 'done', label: l.done, icon: Icons.check_rounded),
     ];
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      padding: const EdgeInsets.all(4),
+          border: Border(bottom: BorderSide(color: scheme.outlineVariant))),
       child: Row(
         children: tabs.map((t) {
           final sel = current == t.btn;
           return Expanded(
-            child: Material(
-              color: sel ? AppColors.primary : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: () => onChanged(t.btn),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(t.icon, size: 16, color: sel ? Colors.white : AppColors.muted),
-                      const SizedBox(width: 6),
-                      Text(t.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: sel ? Colors.white : AppColors.text)),
-                    ],
+            child: InkWell(
+              onTap: () => onChanged(t.btn),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(t.icon,
+                            size: 16,
+                            color:
+                                sel ? scheme.primary : scheme.onSurfaceVariant),
+                        const SizedBox(width: 6),
+                        Text(t.label,
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight:
+                                    sel ? FontWeight.w700 : FontWeight.w500,
+                                color: sel
+                                    ? scheme.primary
+                                    : scheme.onSurfaceVariant)),
+                      ],
+                    ),
                   ),
-                ),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    height: 2,
+                    width: sel ? 42 : 0,
+                    color: scheme.primary,
+                  ),
+                ],
               ),
             ),
           );
@@ -269,6 +340,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final (icon, title, sub) = switch (tab) {
       'inbox' => (Icons.inbox_rounded, '收件箱是空的', '把要做的事记下来，随手完成'),
       'done' => (Icons.task_alt_rounded, '还没有已完成的任务', '勾选任务即可在这里看到'),
@@ -279,14 +351,21 @@ class _EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 84, height: 84,
-            decoration: BoxDecoration(color: AppColors.primarySoft, shape: BoxShape.circle),
-            child: Icon(icon, size: 38, color: AppColors.primary),
+            width: 84,
+            height: 84,
+            decoration: BoxDecoration(
+                color: scheme.primaryContainer, shape: BoxShape.circle),
+            child: Icon(icon, size: 38, color: scheme.primary),
           ),
           const SizedBox(height: 18),
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.text)),
+          Text(title,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
-          Text(sub, style: const TextStyle(fontSize: 13, color: AppColors.muted)),
+          Text(sub,
+              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
         ],
       ),
     );
@@ -297,40 +376,48 @@ class _TaskCard extends StatelessWidget {
   final Task task;
   final VoidCallback onTap;
   final ValueChanged<bool> onToggle;
-  const _TaskCard({required this.task, required this.onTap, required this.onToggle});
+  const _TaskCard(
+      {required this.task, required this.onTap, required this.onToggle});
 
-  Color get _statusColor => switch (task.status) {
-        TaskStatus.done => AppColors.done,
-        TaskStatus.doing => AppColors.primary,
-        TaskStatus.todo => AppColors.muted,
+  Color _statusColor(ColorScheme scheme) => switch (task.status) {
+        TaskStatus.done => scheme.tertiary,
+        TaskStatus.doing => scheme.primary,
+        TaskStatus.todo => scheme.outline,
       };
 
   @override
   Widget build(BuildContext context) {
     final done = task.status == TaskStatus.done;
+    final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
+      color: scheme.surface,
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 13),
           child: Row(
             children: [
-              Container(width: 4, height: 40, decoration: BoxDecoration(color: _statusColor, borderRadius: BorderRadius.circular(2))),
+              Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: _statusColor(scheme), shape: BoxShape.circle)),
               const SizedBox(width: 12),
-              // 自定义完成圈
               GestureDetector(
                 onTap: () => onToggle(!done),
                 child: Container(
-                  width: 24, height: 24,
+                  width: 22,
+                  height: 22,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: done ? AppColors.done : Colors.transparent,
-                    border: Border.all(color: done ? AppColors.done : AppColors.line, width: 1.6),
+                    color: done ? scheme.tertiary : Colors.transparent,
+                    border: Border.all(
+                        color: done ? scheme.tertiary : scheme.outline,
+                        width: 1.6),
                   ),
-                  child: done ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
+                  child: done
+                      ? Icon(Icons.check, size: 14, color: scheme.onTertiary)
+                      : null,
                 ),
               ),
               const SizedBox(width: 12),
@@ -338,22 +425,36 @@ class _TaskCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(task.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
-                            color: done ? AppColors.muted : AppColors.text,
-                            decoration: done ? TextDecoration.lineThrough : null)),
+                    Text(task.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: done
+                                ? scheme.onSurfaceVariant
+                                : scheme.onSurface,
+                            decoration:
+                                done ? TextDecoration.lineThrough : null)),
                     if (task.due != null) ...[
                       const SizedBox(height: 5),
                       Row(children: [
-                        Icon(Icons.schedule_rounded, size: 13, color: AppColors.muted),
+                        Icon(Icons.schedule_rounded,
+                            size: 13, color: scheme.onSurfaceVariant),
                         const SizedBox(width: 3),
-                        Text(_fmt(task.due!), style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+                        Text(_fmt(task.due!),
+                            style: TextStyle(
+                                fontSize: 12, color: scheme.onSurfaceVariant)),
                       ]),
                     ],
                   ],
                 ),
               ),
-              if (task.isRepeating) const Padding(padding: EdgeInsets.only(right: 6), child: Icon(Icons.repeat_rounded, size: 16, color: AppColors.primary)),
+              if (task.isRepeating)
+                Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Icon(Icons.repeat_rounded,
+                        size: 16, color: scheme.primary)),
               if (task.due != null) _DueChip(due: task.due!),
             ],
           ),
@@ -378,21 +479,14 @@ class _DueChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final overdue = due.value.toLocal().isBefore(DateTime.now());
-    final urgent = overdue || due.value.toLocal().difference(DateTime.now()).inDays == 0;
-    final color = overdue ? AppColors.accent : (urgent ? AppColors.primary : AppColors.muted);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(overdue ? '已逾期' : (urgent ? '今天' : '有期限'),
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
-    );
+    final urgent =
+        overdue || due.value.toLocal().difference(DateTime.now()).inDays == 0;
+    final scheme = Theme.of(context).colorScheme;
+    final color = overdue
+        ? scheme.error
+        : (urgent ? scheme.primary : scheme.onSurfaceVariant);
+    return Text(overdue ? '已逾期' : (urgent ? '今天' : '有期限'),
+        style:
+            TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color));
   }
 }
-
-
-
-
