@@ -31,6 +31,22 @@ class InMemoryRepository implements TaskRepository {
   }
 
   @override
+  Future<void> replaceTasksAndRemoveList(
+      String listId, List<Task> tasks) async {
+    for (final task in tasks) {
+      _tasks[task.id] = task;
+      _changes.add(Change(
+        changeId: task.changeId,
+        taskId: task.id,
+        kind: task.deleted ? 'delete' : 'upsert',
+        timestamp: task.updatedAt,
+        version: task.version,
+      ));
+    }
+    _lists.remove(listId);
+  }
+
+  @override
   Future<void> removeList(String id) async {
     _lists.remove(id);
   }

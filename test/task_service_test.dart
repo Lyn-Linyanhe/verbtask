@@ -3,6 +3,14 @@ import 'package:verb_app/core/models/models.dart';
 import 'package:verb_app/core/services/task_service.dart';
 import 'package:verb_app/core/storage/inmemory_repository.dart';
 
+class FailingBatchRepository extends InMemoryRepository {
+  @override
+  Future<void> replaceTasksAndRemoveList(
+      String listId, List<Task> tasks) async {
+    throw StateError('simulated batch failure');
+  }
+}
+
 void main() {
   test('创建/编辑/回收站/恢复/彻底删除', () async {
     final svc = TaskService(InMemoryRepository());
@@ -53,8 +61,41 @@ void main() {
     final service = TaskService(InMemoryRepository());
     final task = await service.create(title: '原任务');
     final edited = await service.edit(task, title: '新任务');
+    final editedAgain = await service.edit(edited, title: '新任务 2');
 
     expect(edited.changeId, isNot(task.changeId));
     expect(edited.changeId, matches(RegExp(r'^[0-9a-f-]{36}$')));
+    expect(editedAgain.changeId, isNot(edited.changeId));
+  });
+
+  test('编辑清单会持久化名称和排序', () async {
+    final service = TaskService(InMemoryRepository());
+    final list = await service.createList(name: '工作');
+
+    final edited = await service.editList(
+      list,
+      name: '重要工作',
+      color: '#4455AA',
+      sortOrder: 2,
+    );
+
+    expect(edited.name, '重要工作');
+    expect(edited.color, '#4455AA');
+    expect(edited.sortOrder, 2);
+  });
+
+  test('删除清单的批量写入失败时不改变任务归属', () async {
+    final repo = FailingBatchRepository();
+    final service = TaskService(repo);
+    final list = await service.createList(name: '工作');
+    await service.create(title: '报告', listId: list.id);
+
+    await expectLater(
+      service.deleteList(list),
+      throwsA(isA<StateError>()),
+    );
+
+    expect((await repo.allLists()).single.id, list.id);
+    expect((await repo.allTasks()).single.listId, list.id);
   });
 }

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:verb_app/core/models/models.dart';
 import 'package:verb_app/core/storage/backup_service.dart';
 import 'package:verb_app/core/storage/file_repository.dart';
+import 'package:verb_app/core/services/task_service.dart';
 
 void main() {
   late Directory dir;
@@ -50,6 +51,41 @@ void main() {
       throwsA(isA<FileSystemException>()),
     );
     expect(await f.readAsString(), before);
+  });
+
+  test('删除清单的批量写入失败时不产生部分迁移', () async {
+    final f = File('${dir.path}/data.json');
+    final repo = FileRepository(f);
+    final service = TaskService(repo);
+    final list = await service.createList(name: '工作');
+    await service.create(title: '一号', listId: list.id);
+    await service.create(title: '二号', listId: list.id);
+    final before = await f.readAsString();
+    await Directory('${f.path}.tmp').create();
+
+    await expectLater(
+        service.deleteList(list), throwsA(isA<FileSystemException>()));
+
+    expect(await f.readAsString(), before);
+    final reloaded = FileRepository(f);
+    expect((await reloaded.allLists()).single.id, list.id);
+    expect((await reloaded.allTasks()).every((task) => task.listId == list.id),
+        isTrue);
+  });
+
+  test('旧 JSON 缺少 changeId 仍可读取', () {
+    final json = Task(
+      id: 'legacy',
+      title: '旧任务',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 2),
+    ).toJson()
+      ..remove('changeId');
+
+    final task = Task.fromJson(json);
+
+    expect(task.title, '旧任务');
+    expect(task.changeId, isNotEmpty);
   });
 
   test('备份导出/导入 round-trip', () async {

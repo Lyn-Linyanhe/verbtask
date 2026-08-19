@@ -24,6 +24,9 @@ abstract class TaskRepository {
   Future<void> upsertTask(Task task);
   Future<void> upsertList(TaskList list);
 
+  /// 一次性替换任务并移除清单，避免删除清单时出现部分迁移。
+  Future<void> replaceTasksAndRemoveList(String listId, List<Task> tasks);
+
   /// 物理删除清单；清单内任务由业务层先移回收件箱。
   Future<void> removeList(String id);
 

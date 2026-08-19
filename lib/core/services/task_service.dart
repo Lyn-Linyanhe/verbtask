@@ -114,10 +114,11 @@ class TaskService {
 
   Future<void> deleteList(TaskList list) async {
     final tasks = await _repo.allTasks();
-    for (final task in tasks.where((task) => task.listId == list.id)) {
-      await edit(task, listId: null);
-    }
-    await _repo.removeList(list.id);
+    final moved = tasks
+        .where((task) => task.listId == list.id)
+        .map((task) => task.copyWith(listId: null))
+        .toList();
+    await _repo.replaceTasksAndRemoveList(list.id, moved);
   }
 
   Future<List<Task>> query({

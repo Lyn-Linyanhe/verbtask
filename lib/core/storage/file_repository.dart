@@ -43,12 +43,16 @@ class FileRepository implements TaskRepository {
     }
   }
 
-  Future<void> _persist() async {
+  Future<void> _persist({
+    List<Task>? tasks,
+    List<TaskList>? lists,
+    List<Change>? changes,
+  }) async {
     final root = {
       'version': 1,
-      'tasks': _tasks.map((t) => t.toJson()).toList(),
-      'lists': _lists.map((l) => l.toJson()).toList(),
-      'changes': _changes
+      'tasks': (tasks ?? _tasks).map((t) => t.toJson()).toList(),
+      'lists': (lists ?? _lists).map((l) => l.toJson()).toList(),
+      'changes': (changes ?? _changes)
           .map((c) => {
                 'changeId': c.changeId,
                 'taskId': c.taskId,
@@ -105,6 +109,41 @@ class FileRepository implements TaskRepository {
       _lists.add(list);
     }
     await _persist();
+  }
+
+  @override
+  Future<void> replaceTasksAndRemoveList(
+      String listId, List<Task> tasks) async {
+    final nextTasks = List<Task>.of(_tasks);
+    final nextChanges = List<Change>.of(_changes);
+    for (final task in tasks) {
+      final idx = nextTasks.indexWhere((existing) => existing.id == task.id);
+      if (idx >= 0) {
+        nextTasks[idx] = task;
+      } else {
+        nextTasks.add(task);
+      }
+      nextChanges.add(Change(
+        changeId: task.changeId,
+        taskId: task.id,
+        kind: task.deleted ? 'delete' : 'upsert',
+        timestamp: task.updatedAt,
+        version: task.version,
+      ));
+    }
+    final nextLists = _lists.where((list) => list.id != listId).toList();
+
+    // 只有快照成功替换后才提交内存状态，失败时调用方仍看到完整旧状态。
+    await _persist(
+      tasks: nextTasks,
+      lists: nextLists,
+      changes: nextChanges,
+    );
+    _tasks = nextTasks;
+    _lists = nextLists;
+    _changes
+      ..clear()
+      ..addAll(nextChanges);
   }
 
   @override
