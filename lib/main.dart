@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'app/windows_tray.dart';
+import 'core/sync/background_sync.dart';
 import 'core/sync/sync_controller.dart';
 import 'core/sync/sync_host.dart';
 import 'core/notifications/app_notifications.dart';
@@ -18,6 +19,7 @@ Future<void> main() async {
     repo,
   );
   await AppNotifications.init(repo);
+  await BackgroundSync.init();
   runApp(VerbApp(
     repository: repo,
     settings: settings,
