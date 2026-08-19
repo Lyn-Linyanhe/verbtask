@@ -31,7 +31,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('待删'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.restore));
+    await tester.tap(find.byIcon(Icons.restore_rounded));
     await tester.pumpAndSettle();
     expect(find.text('待删'), findsNothing);
 
@@ -39,4 +39,5 @@ void main() {
     expect(all.single.deleted, isFalse);
   });
 }
+
 

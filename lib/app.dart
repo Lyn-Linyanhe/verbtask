@@ -47,6 +47,8 @@ class _VerbAppState extends State<VerbApp> {
       supportedLocales: const [Locale('en'), Locale('zh')],
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       theme: buildAppTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: ThemeMode.system,
       home: HomePage(
         repository: _repo,
         locale: _locale,
@@ -57,6 +59,7 @@ class _VerbAppState extends State<VerbApp> {
     );
   }
 }
+
 
 
 
