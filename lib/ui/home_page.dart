@@ -3,6 +3,7 @@ import '../l10n/generated/app_localizations.dart';
 import '../core/models/models.dart';
 import '../core/services/task_service.dart';
 import '../core/nlp/nlp_service.dart';
+import '../core/notifications/app_notifications.dart';
 import '../core/storage/repository.dart';
 import '../core/settings/settings_controller.dart';
 import 'pages/task_edit_page.dart';
@@ -42,6 +43,8 @@ class _HomePageState extends State<HomePage> {
     _reload();
   }
 
+  Future<void> _reschedule() => AppNotifications.rescheduleAll(widget.repository);
+
   Future<void> _reload() async {
     final all = await _tasks.query(includeDeleted: false);
     if (!mounted) return;
@@ -78,6 +81,7 @@ class _HomePageState extends State<HomePage> {
         rrule: r.rrule,
         priority: r.priority ?? 0,
       );
+      await _reschedule();
       _input.clear();
       await _reload();
     }
@@ -175,7 +179,7 @@ class _HomePageState extends State<HomePage> {
                         onTap: () => _openEdit(t),
                         leading: Checkbox(
                           value: t.status == TaskStatus.done,
-                          onChanged: (v) async { await _tasks.setDone(t, v ?? false); await _reload(); },
+                          onChanged: (v) async { await _tasks.setDone(t, v ?? false); await _reschedule(); await _reload(); },
                         ),
                         title: Text(t.title),
                         subtitle: t.due != null ? Text('截止: ${t.due!.value.toLocal()}') : null,
@@ -188,3 +192,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
