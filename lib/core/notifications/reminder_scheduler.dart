@@ -12,7 +12,7 @@ class ReminderScheduler {
     if (reminders.isEmpty) return const [];
     return reminders.map((r) {
       if (r.isAbsolute) return r.absoluteAt!.toUtc();
-      return dueAt.toUtc().subtract(Duration(minutes: r.offsetMinutes));
+      return dueAt.toUtc().add(Duration(minutes: r.offsetMinutes)); // 负偏移=提前
     }).toList();
   }
 
@@ -24,3 +24,4 @@ class ReminderScheduler {
     return rrule.nextAfter(task.rrule!, now, start: start);
   }
 }
+

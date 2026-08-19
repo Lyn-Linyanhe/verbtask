@@ -1,0 +1,49 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import '../settings/local_settings.dart';
+import '../storage/repository.dart';
+import '../storage/backup_service.dart';
+
+/// 供设置页使用：读写设置 + 备份导出/导入 + LLM 配置。
+class SettingsController extends ChangeNotifier {
+  final LocalSettings settings;
+  final BackupService backup;
+  SettingsController(this.settings, TaskRepository repo) : backup = BackupService(repo);
+
+  String get language => settings.language;
+  set language(String v) { settings.language = v; _save(); }
+
+  String get llmBaseUrl => settings.llmBaseUrl;
+  set llmBaseUrl(String v) { settings.llmBaseUrl = v; _save(); }
+  String get llmKey => settings.llmKey;
+  set llmKey(String v) { settings.llmKey = v; _save(); }
+  int get llmEnabled => settings.llmEnabled;
+  set llmEnabled(int v) { settings.llmEnabled = v; _save(); }
+
+  int get syncAutoIntervalMin => settings.syncAutoIntervalMin;
+  set syncAutoIntervalMin(int v) { settings.syncAutoIntervalMin = v; _save(); }
+  int get notifyDefaultOffsetMin => settings.notifyDefaultOffsetMin;
+  set notifyDefaultOffsetMin(int v) { settings.notifyDefaultOffsetMin = v; _save(); }
+
+  bool get trayEnabled => settings.trayEnabled;
+  set trayEnabled(bool v) { settings.trayEnabled = v; _save(); }
+  bool get autostartEnabled => settings.autostartEnabled;
+  set autostartEnabled(bool v) { settings.autostartEnabled = v; _save(); }
+
+  Future<String> exportTo(File f) async {
+    final json = await backup.exportJson();
+    await f.parent.create(recursive: true);
+    await f.writeAsString(json);
+    return json;
+  }
+
+  Future<int> importFrom(File f) async {
+    final json = await f.readAsString();
+    return backup.importJson(json);
+  }
+
+  void _save() {
+    settings.save(); // 异步，不阻塞 UI
+    notifyListeners();
+  }
+}

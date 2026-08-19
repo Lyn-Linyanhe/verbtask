@@ -4,14 +4,25 @@ import '../core/models/models.dart';
 import '../core/services/task_service.dart';
 import '../core/nlp/nlp_service.dart';
 import '../core/storage/repository.dart';
+import '../core/settings/settings_controller.dart';
 import 'pages/task_edit_page.dart';
 import 'pages/recycle_bin_page.dart';
+import 'pages/settings_page.dart';
 
 class HomePage extends StatefulWidget {
   final TaskRepository repository;
   final Locale locale;
   final ValueChanged<Locale> onLocaleChanged;
-  const HomePage({super.key, required this.repository, required this.locale, required this.onLocaleChanged});
+  final SettingsController? settings;
+  final VoidCallback? onQuickSync;
+  const HomePage({
+    super.key,
+    required this.repository,
+    required this.locale,
+    required this.onLocaleChanged,
+    this.settings,
+    this.onQuickSync,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -85,6 +96,18 @@ class _HomePageState extends State<HomePage> {
     if (changed == true) await _reload();
   }
 
+  Future<void> _openSettings() async {
+    final s = widget.settings;
+    if (s == null) return;
+    await Navigator.push(context, MaterialPageRoute(
+      builder: (_) => SettingsPage(
+        controller: s,
+        onLocaleChanged: widget.onLocaleChanged,
+        onQuickSync: widget.onQuickSync,
+      ),
+    ));
+  }
+
   void _chooseLanguage() {
     showDialog<void>(
       context: context,
@@ -112,8 +135,10 @@ class _HomePageState extends State<HomePage> {
         title: Text(l.appTitle),
         actions: [
           IconButton(icon: const Icon(Icons.delete), tooltip: '回收站', onPressed: _openBin),
+          if (widget.settings != null)
+            IconButton(icon: const Icon(Icons.settings), tooltip: '设置', onPressed: _openSettings),
           IconButton(icon: const Icon(Icons.translate), tooltip: l.language, onPressed: _chooseLanguage),
-          IconButton(icon: const Icon(Icons.update), tooltip: l.quickSync, onPressed: () {}),
+          IconButton(icon: const Icon(Icons.update), tooltip: l.quickSync, onPressed: widget.onQuickSync ?? () {}),
         ],
       ),
       body: Column(
