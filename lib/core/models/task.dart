@@ -1,10 +1,12 @@
+import 'package:uuid/uuid.dart';
+
 /// 任务状态（看板列式）
 enum TaskStatus { todo, doing, done }
 
 /// 截止日期：支持「仅日期」或「日期+时刻」。
 class DueDate {
   final DateTime value; // 统一存 UTC
-  final bool dateOnly;  // true=仅日期（展示不随夏令时漂移）
+  final bool dateOnly; // true=仅日期（展示不随夏令时漂移）
 
   const DueDate(this.value, {this.dateOnly = false});
 
@@ -47,6 +49,8 @@ class Reminder {
       );
 }
 
+final _taskChangeUuid = Uuid();
+
 /// 任务实体。所有跨端同步依赖 id / version / updatedAt / changeId。
 class Task {
   final String id;
@@ -83,7 +87,7 @@ class Task {
     String? changeId,
     this.seriesId,
     this.deleted = false,
-  }) : changeId = changeId ?? '$id-v1';
+  }) : changeId = changeId ?? '$id-v1'; // 旧 JSON 缺失时保留可读性；新写入由 service 传 UUID。
 
   bool get isInInbox => listId == null;
   bool get isRepeating => rrule != null && rrule!.isNotEmpty;
@@ -115,8 +119,9 @@ class Task {
       createdAt: createdAt,
       updatedAt: DateTime.now().toUtc(),
       version: version + 1,
-      changeId: '$id-${version + 1}',
-      seriesId: identical(seriesId, _sentinel) ? this.seriesId : seriesId as String?,
+      changeId: _taskChangeUuid.v4(),
+      seriesId:
+          identical(seriesId, _sentinel) ? this.seriesId : seriesId as String?,
       deleted: deleted ?? this.deleted,
     );
   }
@@ -145,8 +150,8 @@ class Task {
         title: json['title'] as String,
         notes: (json['notes'] as String?) ?? '',
         listId: json['listId'] as String?,
-        status: TaskStatus.values.firstWhere(
-            (e) => e.name == (json['status'] as String? ?? 'todo')),
+        status: TaskStatus.values
+            .firstWhere((e) => e.name == (json['status'] as String? ?? 'todo')),
         due: json['due'] == null
             ? null
             : DueDate.fromJson(json['due'] as Map<String, Object?>),

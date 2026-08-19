@@ -6,7 +6,8 @@ import 'package:verb_app/core/storage/inmemory_repository.dart';
 void main() {
   test('创建/编辑/回收站/恢复/彻底删除', () async {
     final svc = TaskService(InMemoryRepository());
-    final t = await svc.create(title: '买牛奶', due: DueDate(DateTime.utc(2026,1,5)));
+    final t =
+        await svc.create(title: '买牛奶', due: DueDate(DateTime.utc(2026, 1, 5)));
     expect(t.title, '买牛奶');
     expect(t.version, 1);
 
@@ -30,9 +31,30 @@ void main() {
 
   test('按截止时间排序', () async {
     final svc = TaskService(InMemoryRepository());
-    await svc.create(title: '晚', due: DueDate(DateTime.utc(2026,2,1)));
-    await svc.create(title: '早', due: DueDate(DateTime.utc(2026,1,1)));
+    await svc.create(title: '晚', due: DueDate(DateTime.utc(2026, 2, 1)));
+    await svc.create(title: '早', due: DueDate(DateTime.utc(2026, 1, 1)));
     final q = await svc.query();
     expect(q.first.title, '早');
+  });
+
+  test('删除清单会把任务移回收件箱并移除清单', () async {
+    final repo = InMemoryRepository();
+    final service = TaskService(repo);
+    final list = await service.createList(name: '工作');
+    await service.create(title: '报告', listId: list.id);
+
+    await service.deleteList(list);
+
+    expect((await repo.allLists()), isEmpty);
+    expect((await repo.allTasks()).single.listId, isNull);
+  });
+
+  test('任务编辑生成新的唯一 changeId', () async {
+    final service = TaskService(InMemoryRepository());
+    final task = await service.create(title: '原任务');
+    final edited = await service.edit(task, title: '新任务');
+
+    expect(edited.changeId, isNot(task.changeId));
+    expect(edited.changeId, matches(RegExp(r'^[0-9a-f-]{36}$')));
   });
 }

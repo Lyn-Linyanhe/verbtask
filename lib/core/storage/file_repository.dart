@@ -59,7 +59,17 @@ class FileRepository implements TaskRepository {
           .toList(),
     };
     await file.parent.create(recursive: true);
-    await file.writeAsString(jsonEncode(root));
+    final temp = File('${file.path}.tmp');
+    try {
+      await temp.writeAsString(jsonEncode(root), flush: true);
+      await temp.rename(file.path);
+    } catch (_) {
+      // 原文件只在临时文件完整写入后才会被替换；失败时保留原数据。
+      if (await temp.exists()) {
+        await temp.delete();
+      }
+      rethrow;
+    }
   }
 
   @override
@@ -98,6 +108,12 @@ class FileRepository implements TaskRepository {
   }
 
   @override
+  Future<void> removeList(String id) async {
+    _lists.removeWhere((list) => list.id == id);
+    await _persist();
+  }
+
+  @override
   Future<void> removeTask(String id) async {
     _tasks.removeWhere((t) => t.id == id);
     await _persist();
@@ -111,4 +127,3 @@ class FileRepository implements TaskRepository {
     return idx < 0 ? List.of(_changes) : _changes.skip(idx).toList();
   }
 }
-

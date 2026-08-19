@@ -23,8 +23,13 @@ abstract class TaskRepository {
   Future<List<TaskList>> allLists();
   Future<void> upsertTask(Task task);
   Future<void> upsertList(TaskList list);
+
+  /// 物理删除清单；清单内任务由业务层先移回收件箱。
+  Future<void> removeList(String id);
+
   /// 彻底删除（物理移除，不进入 oplog 传播）。
   Future<void> removeTask(String id);
+
   /// 距 [cursor]（changeId）之后的本地改动；null cursor = 全量。
   Future<List<Change>> changesSince(String? cursor);
 }

@@ -18,12 +18,38 @@ void main() {
       createdAt: DateTime.utc(2026, 1, 1),
       updatedAt: DateTime.utc(2026, 1, 2),
     ));
-    await repo.upsertList(TaskList(id: 'l', name: '生活', updatedAt: DateTime.utc(2026,1,1)));
+    await repo.upsertList(
+        TaskList(id: 'l', name: '生活', updatedAt: DateTime.utc(2026, 1, 1)));
 
     final repo2 = FileRepository(f); // 重新加载
     expect((await repo2.allTasks()).length, 1);
     expect((await repo2.allTasks()).first.title, '买菜');
     expect((await repo2.allLists()).first.name, '生活');
+  });
+
+  test('写入失败时不移除已有数据文件', () async {
+    final f = File('${dir.path}/data.json');
+    final repo = FileRepository(f);
+    await repo.upsertTask(Task(
+      id: 'a',
+      title: '已有数据',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 2),
+    ));
+    final before = await f.readAsString();
+
+    // 占用预期的临时路径，模拟临时文件无法写入；原文件内容应保持不变。
+    await Directory('${f.path}.tmp').create();
+    await expectLater(
+      repo.upsertTask(Task(
+        id: 'b',
+        title: '不会覆盖',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 2),
+      )),
+      throwsA(isA<FileSystemException>()),
+    );
+    expect(await f.readAsString(), before);
   });
 
   test('备份导出/导入 round-trip', () async {

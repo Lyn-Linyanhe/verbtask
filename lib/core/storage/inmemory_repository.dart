@@ -31,13 +31,20 @@ class InMemoryRepository implements TaskRepository {
   }
 
   @override
+  Future<void> removeList(String id) async {
+    _lists.remove(id);
+  }
+
+  @override
   Future<void> removeTask(String id) async {
     _tasks.remove(id);
   }
 
   @override
   Future<List<Change>> changesSince(String? cursor) async {
-    final idx = cursor == null ? 0 : _changes.indexWhere((c) => c.changeId == cursor) + 1;
+    final idx = cursor == null
+        ? 0
+        : _changes.indexWhere((c) => c.changeId == cursor) + 1;
     return idx < 0 ? _changes : _changes.skip(idx).toList();
   }
 }

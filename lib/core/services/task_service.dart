@@ -33,13 +33,14 @@ class TaskService {
       createdAt: now,
       updatedAt: now,
       version: 1,
-      changeId: null,
+      changeId: _uuid.v4(),
     );
     await _repo.upsertTask(task);
     return task;
   }
 
-  Future<Task> edit(Task task, {
+  Future<Task> edit(
+    Task task, {
     String? title,
     String? notes,
     Object? listId = _sentinel,
@@ -52,10 +53,12 @@ class TaskService {
     final next = task.copyWith(
       title: title,
       notes: notes,
-      listId: listId,
-      due: due,
+      // Task.copyWith 的 sentinel 是模型私有实现；这里传回当前值，
+      // 同时保留显式传 null 清空字段的能力。
+      listId: identical(listId, _sentinel) ? task.listId : listId,
+      due: identical(due, _sentinel) ? task.due : due,
       status: status,
-      rrule: rrule,
+      rrule: identical(rrule, _sentinel) ? task.rrule : rrule,
       reminders: reminders,
       priority: priority,
     );
@@ -83,6 +86,40 @@ class TaskService {
   /// 彻底删除（物理移除，不同步）。
   Future<void> deletePermanent(Task t) => _repo.removeTask(t.id);
 
+  Future<TaskList> createList({required String name, String? color}) async {
+    final list = TaskList(
+      id: _uuid.v4(),
+      name: name,
+      color: color,
+      updatedAt: DateTime.now().toUtc(),
+    );
+    await _repo.upsertList(list);
+    return list;
+  }
+
+  Future<TaskList> editList(
+    TaskList list, {
+    String? name,
+    String? color,
+    int? sortOrder,
+  }) async {
+    final next = list.copyWith(
+      name: name,
+      color: color,
+      sortOrder: sortOrder,
+    );
+    await _repo.upsertList(next);
+    return next;
+  }
+
+  Future<void> deleteList(TaskList list) async {
+    final tasks = await _repo.allTasks();
+    for (final task in tasks.where((task) => task.listId == list.id)) {
+      await edit(task, listId: null);
+    }
+    await _repo.removeList(list.id);
+  }
+
   Future<List<Task>> query({
     String? search,
     String? listId,
@@ -94,8 +131,11 @@ class TaskService {
     if (!includeDeleted) ts = ts.where((t) => !t.deleted).toList();
     if (search != null && search.isNotEmpty) {
       final q = search.toLowerCase();
-      ts = ts.where((t) =>
-          t.title.toLowerCase().contains(q) || t.notes.toLowerCase().contains(q)).toList();
+      ts = ts
+          .where((t) =>
+              t.title.toLowerCase().contains(q) ||
+              t.notes.toLowerCase().contains(q))
+          .toList();
     }
     if (listId != null) ts = ts.where((t) => t.listId == listId).toList();
     if (status != null) ts = ts.where((t) => t.status == status).toList();
@@ -114,4 +154,3 @@ class TaskService {
 const Object _sentinel = Object();
 
 enum BySort { dueAsc, createdDesc }
-
