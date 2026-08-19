@@ -1,4 +1,6 @@
-# 个人任务管理 App Implementation Plan
+# 个人任务管理 App Implementation Plan（历史草案）
+
+> 本文是 2026-08-19 的初始草案，曾假设 SQLite/Drift、Riverpod 和全量功能同时落地。当前执行以 `docs/superpowers/specs/2026-08-20-verbtask-v0-2-daily-workflow-design.md` 和对应 v0.2 计划为准；不要按本文启动新的实现任务。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
