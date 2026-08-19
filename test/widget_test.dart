@@ -13,13 +13,13 @@ void main() {
     expect(find.text('Inbox'), findsOneWidget);
   });
 
-  testWidgets('通过设置切换到中文', (tester) async {
+  testWidgets('通过更多菜单切换到中文', (tester) async {
     await tester.pumpWidget(VerbApp(
       repository: InMemoryRepository(),
       initialLocale: const Locale('en'),
     ));
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.translate));
+    await tester.tap(find.byIcon(Icons.more_horiz_rounded));
     await tester.pumpAndSettle();
     await tester.tap(find.text('中文'));
     await tester.pumpAndSettle();

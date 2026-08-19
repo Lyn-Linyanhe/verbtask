@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'l10n/generated/app_localizations.dart';
+import 'ui/theme/app_theme.dart';
 import 'core/storage/file_repository.dart';
 import 'core/storage/repository.dart';
 import 'core/settings/local_settings.dart';
@@ -45,7 +46,7 @@ class _VerbAppState extends State<VerbApp> {
       locale: _locale,
       supportedLocales: const [Locale('en'), Locale('zh')],
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
+      theme: buildAppTheme(),
       home: HomePage(
         repository: _repo,
         locale: _locale,
@@ -56,5 +57,7 @@ class _VerbAppState extends State<VerbApp> {
     );
   }
 }
+
+
 
 
