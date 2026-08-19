@@ -17,6 +17,7 @@ class HomePage extends StatefulWidget {
   final ValueChanged<Locale> onLocaleChanged;
   final SettingsController? settings;
   final VoidCallback? onQuickSync;
+  final ValueChanged<ThemeMode>? onThemeModeChanged;
   const HomePage({
     super.key,
     required this.repository,
@@ -24,6 +25,7 @@ class HomePage extends StatefulWidget {
     required this.onLocaleChanged,
     this.settings,
     this.onQuickSync,
+    this.onThemeModeChanged,
   });
 
   @override
@@ -106,7 +108,7 @@ class _HomePageState extends State<HomePage> {
     final s = widget.settings;
     if (s == null) return;
     await Navigator.push(context, MaterialPageRoute(
-      builder: (_) => SettingsPage(controller: s, onLocaleChanged: widget.onLocaleChanged, onQuickSync: widget.onQuickSync),
+      builder: (_) => SettingsPage(controller: s, onLocaleChanged: widget.onLocaleChanged, onQuickSync: widget.onQuickSync, onThemeModeChanged: widget.onThemeModeChanged),
     ));
   }
 
@@ -390,6 +392,7 @@ class _DueChip extends StatelessWidget {
     );
   }
 }
+
 
 
 

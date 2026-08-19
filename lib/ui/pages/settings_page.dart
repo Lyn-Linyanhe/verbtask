@@ -8,7 +8,8 @@ class SettingsPage extends StatefulWidget {
   final ValueChanged<Locale> onLocaleChanged;
   final File? backupFile;
   final VoidCallback? onQuickSync;
-  const SettingsPage({super.key, required this.controller, required this.onLocaleChanged, this.backupFile, this.onQuickSync});
+  final ValueChanged<ThemeMode>? onThemeModeChanged;
+  const SettingsPage({super.key, required this.controller, required this.onLocaleChanged, this.backupFile, this.onQuickSync, this.onThemeModeChanged});
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
@@ -61,7 +62,16 @@ class _SettingsPageState extends State<SettingsPage> {
           items: const [DropdownMenuItem(value: 'zh', child: Text('中文')), DropdownMenuItem(value: 'en', child: Text('English'))],
           onChanged: (v) { if (v == null) return; setState(() => c.language = v); widget.onLocaleChanged(Locale(v)); },
         )),
-
+        _Section(title: '外观', child: SegmentedButton<ThemeMode>(
+          segments: const [
+            ButtonSegment(value: ThemeMode.system, label: Text('跟随系统'), icon: Icon(Icons.brightness_auto_rounded, size: 16)),
+            ButtonSegment(value: ThemeMode.light, label: Text('浅色'), icon: Icon(Icons.light_mode_rounded, size: 16)),
+            ButtonSegment(value: ThemeMode.dark, label: Text('深色'), icon: Icon(Icons.dark_mode_rounded, size: 16)),
+          ],
+          selected: {ThemeMode.system},
+          showSelectedIcon: false,
+          onSelectionChanged: (s) { if (widget.onThemeModeChanged != null) widget.onThemeModeChanged!(s.first); },
+        )),
         _Section(title: 'LLM 增强解析', child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -127,3 +137,4 @@ class _NumberField extends StatelessWidget {
   @override
   Widget build(BuildContext context) => TextField(controller: controller, keyboardType: TextInputType.number, onChanged: onChanged, decoration: InputDecoration(labelText: label));
 }
+
