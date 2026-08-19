@@ -11,7 +11,8 @@ import 'ui/home_page.dart';
 class VerbApp extends StatefulWidget {
   final TaskRepository? repository;
   final Locale? initialLocale;
-  const VerbApp({super.key, this.repository, this.initialLocale});
+  final SettingsController? settings;
+  const VerbApp({super.key, this.repository, this.initialLocale, this.settings});
 
   @override
   State<VerbApp> createState() => _VerbAppState();
@@ -54,3 +55,4 @@ class _VerbAppState extends State<VerbApp> {
     );
   }
 }
+
