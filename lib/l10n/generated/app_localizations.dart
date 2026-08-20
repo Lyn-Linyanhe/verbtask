@@ -752,6 +752,30 @@ abstract class AppLocalizations {
   /// **'Windows system'**
   String get windowsSystem;
 
+  /// No description provided for @pairing.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync pairing'**
+  String get pairing;
+
+  /// No description provided for @syncTokenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync token'**
+  String get syncTokenLabel;
+
+  /// No description provided for @serverTokenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter this token on your phone to pair'**
+  String get serverTokenHint;
+
+  /// No description provided for @clientTokenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the sync token from your Windows host'**
+  String get clientTokenHint;
+
   /// No description provided for @keepInTray.
   ///
   /// In en, this message translates to:

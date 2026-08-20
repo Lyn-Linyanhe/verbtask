@@ -357,6 +357,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get windowsSystem => 'Windows 系统';
 
   @override
+  String get pairing => '同步配对';
+
+  @override
+  String get syncTokenLabel => '同步令牌';
+
+  @override
+  String get serverTokenHint => '把令牌输入到你的手机进行配对';
+
+  @override
+  String get clientTokenHint => '粘贴 Windows 主机的同步令牌';
+
+  @override
   String get keepInTray => '托盘常驻';
 
   @override

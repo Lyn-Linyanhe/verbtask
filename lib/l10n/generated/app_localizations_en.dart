@@ -362,6 +362,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get windowsSystem => 'Windows system';
 
   @override
+  String get pairing => 'Sync pairing';
+
+  @override
+  String get syncTokenLabel => 'Sync token';
+
+  @override
+  String get serverTokenHint => 'Enter this token on your phone to pair';
+
+  @override
+  String get clientTokenHint => 'Paste the sync token from your Windows host';
+
+  @override
   String get keepInTray => 'Keep in system tray';
 
   @override

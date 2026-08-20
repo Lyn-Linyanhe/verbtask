@@ -29,6 +29,7 @@ class _SettingsPageState extends State<SettingsPage> {
   late final TextEditingController _llmKey;
   late final TextEditingController _syncMin;
   late final TextEditingController _notifyMin;
+  late final TextEditingController _syncToken;
   late ThemeMode _themeMode;
 
   @override
@@ -41,6 +42,7 @@ class _SettingsPageState extends State<SettingsPage> {
         text: widget.controller.syncAutoIntervalMin.toString());
     _notifyMin = TextEditingController(
         text: widget.controller.notifyDefaultOffsetMin.abs().toString());
+    _syncToken = TextEditingController(text: widget.controller.syncToken);
   }
 
   @override
@@ -57,6 +59,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _llmKey.dispose();
     _syncMin.dispose();
     _notifyMin.dispose();
+    _syncToken.dispose();
     super.dispose();
   }
 
@@ -236,6 +239,20 @@ class _SettingsPageState extends State<SettingsPage> {
                       onPressed: widget.onQuickSync ?? () {},
                       icon: const Icon(Icons.sync_rounded),
                       label: Text(l.quickSync))),
+            ])),
+        _Section(
+            title: l.pairing,
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              TextField(
+                  controller: _syncToken,
+                  readOnly: Platform.isWindows,
+                  onChanged: (v) => c.syncToken = v.trim(),
+                  decoration: InputDecoration(
+                      labelText: l.syncTokenLabel,
+                      helperText: Platform.isWindows
+                          ? l.serverTokenHint
+                          : l.clientTokenHint)),
             ])),
         _Section(
             title: l.windowsSystem,
