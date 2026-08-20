@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
+import '../net/system_proxy.dart';
 
 /// 用户自填的 OpenAI 兼容接口配置（base_url + key，key 存本地）。
 class LlmConfig {
@@ -40,7 +43,14 @@ class LlmDraft {
 /// 可选 LLM 增强解析客户端（OpenAI 兼容 chat/completions）。
 class LlmClient {
   final http.Client _http;
-  LlmClient({http.Client? client}) : _http = client ?? http.Client();
+  /// 默认使用跟随系统代理的 HTTP 客户端；测试可注入 MockClient。
+  LlmClient({http.Client? client})
+      : _http = client ?? _buildProxyClient();
+
+  static http.Client _buildProxyClient() {
+    final io = HttpClient()..findProxy = SystemProxy.findProxy;
+    return IOClient(io);
+  }
 
   Future<LlmDraft?> enhance(String text, LlmConfig cfg) async {
     final resp = await _http
@@ -142,6 +152,10 @@ class LlmClient {
     }
   }
 }
+
+
+
+
 
 
 
