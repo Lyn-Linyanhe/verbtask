@@ -6,9 +6,13 @@ import '../core/nlp/nlp_service.dart';
 import '../core/storage/repository.dart';
 import '../core/settings/settings_controller.dart';
 import '../core/notifications/app_notifications.dart';
+import 'pages/board_page.dart';
+import 'pages/list_manage_page.dart';
 import 'pages/task_edit_page.dart';
 import 'pages/recycle_bin_page.dart';
 import 'pages/settings_page.dart';
+
+enum ViewFilter { inbox, today, planned, list, done, board }
 
 class HomePage extends StatefulWidget {
   final TaskRepository repository;
@@ -36,9 +40,15 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late TaskService _tasks;
   final NlpService _nlp = NlpService();
-  List<Task> _items = [];
-  String _tab = 'inbox';
   final TextEditingController _input = TextEditingController();
+  final TextEditingController _search = TextEditingController();
+  List<Task> _items = const [];
+  List<TaskList> _lists = const [];
+  ViewFilter _view = ViewFilter.inbox;
+  String? _selectedListId;
+  TaskStatus? _statusFilter;
+  BySort _sort = BySort.dueAsc;
+  int _reloadToken = 0;
 
   @override
   void initState() {
@@ -47,25 +57,92 @@ class _HomePageState extends State<HomePage> {
     _reload();
   }
 
+  @override
+  void dispose() {
+    _input.dispose();
+    _search.dispose();
+    super.dispose();
+  }
+
   Future<void> _reschedule() => AppNotifications.rescheduleAll(
         widget.repository,
         defaultOffsetMinutes: widget.settings?.defaultReminderOffsetMinutes,
       );
 
   Future<void> _reload() async {
-    final all = await _tasks.query(includeDeleted: false);
-    if (!mounted) return;
+    final token = ++_reloadToken;
+    final view = _view;
+    final lists = await _tasks.allLists();
+    lists.sort((a, b) {
+      final byOrder = a.sortOrder.compareTo(b.sortOrder);
+      return byOrder == 0 ? a.name.compareTo(b.name) : byOrder;
+    });
+
+    var selectedListId = _selectedListId;
+    if (view == ViewFilter.list && selectedListId == null && lists.isNotEmpty) {
+      selectedListId = lists.first.id;
+    }
+    if (selectedListId != null &&
+        !lists.any((list) => list.id == selectedListId)) {
+      selectedListId = lists.isEmpty ? null : lists.first.id;
+    }
+
+    String? listId;
+    TaskStatus? status;
+    DateTime? dueFrom;
+    DateTime? dueTo;
+    var includeDone = false;
+    switch (view) {
+      case ViewFilter.inbox:
+        listId = null;
+      case ViewFilter.today:
+        dueTo =
+            _startOfDay(DateTime.now().add(const Duration(days: 1))).toUtc();
+      case ViewFilter.planned:
+        break;
+      case ViewFilter.list:
+        listId = selectedListId;
+      case ViewFilter.done:
+        status = TaskStatus.done;
+        includeDone = true;
+      case ViewFilter.board:
+        includeDone = true;
+    }
+
+    if (view != ViewFilter.done && view != ViewFilter.board) {
+      status = _statusFilter;
+    }
+
+    var items = await _tasks.query(
+      search: _search.text.trim().isEmpty ? null : _search.text.trim(),
+      listId: listId,
+      status: status,
+      includeDone: includeDone,
+      dueFrom: dueFrom,
+      dueTo: dueTo,
+      by: _sort,
+    );
+    if (view == ViewFilter.planned) {
+      items = items.where((task) => task.due != null).toList();
+    } else if (view == ViewFilter.list && selectedListId == null) {
+      items = items.where((task) => !task.isInInbox).toList();
+    }
+
+    if (!mounted || token != _reloadToken) return;
     setState(() {
-      _items = switch (_tab) {
-        'inbox' => all.where((t) => t.isInInbox).toList(),
-        'done' => all.where((t) => t.status == TaskStatus.done).toList(),
-        _ => all.where((t) => !t.isInInbox).toList(),
-      };
+      _items = items;
+      _lists = lists;
+      _selectedListId = selectedListId;
     });
   }
 
+  DateTime _startOfDay(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
   Future<void> _quickAdd(String text) async {
-    final r = _nlp.parseLocal(text);
+    final value = text.trim();
+    if (value.isEmpty) return;
+    final r = _nlp.parseLocal(value);
     final l = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
@@ -78,19 +155,21 @@ class _HomePageState extends State<HomePage> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(l.cancel,
-                  style: TextStyle(
-                      color: Theme.of(ctx).colorScheme.onSurfaceVariant))),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.cancel,
+                style: TextStyle(
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(l.confirm)),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.confirm),
+          ),
         ],
       ),
     );
     if (confirmed == true) {
       await _tasks.create(
-        title: r.title ?? text,
+        title: r.title ?? value,
         due: r.due,
         rrule: r.rrule,
         priority: r.priority ?? 0,
@@ -102,15 +181,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _openBin() async {
-    await Navigator.push(context,
-        MaterialPageRoute(builder: (_) => RecycleBinPage(service: _tasks)));
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => RecycleBinPage(service: _tasks)),
+    );
     await _reload();
   }
 
-  Future<void> _openEdit(Task t) async {
+  Future<void> _openEdit(Task task) async {
     final changed = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => TaskEditPage(task: t, service: _tasks)),
+      MaterialPageRoute(
+          builder: (_) => TaskEditPage(task: task, service: _tasks)),
     );
     if (changed == true) {
       await _reschedule();
@@ -118,19 +200,37 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _openSettings() async {
-    final s = widget.settings;
-    if (s == null) return;
+  Future<void> _openLists() async {
     await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SettingsPage(
-              controller: s,
-              onLocaleChanged: widget.onLocaleChanged,
-              onQuickSync: widget.onQuickSync,
-              themeMode: widget.themeMode,
-              onThemeModeChanged: widget.onThemeModeChanged),
-        ));
+      context,
+      MaterialPageRoute(builder: (_) => ListManagePage(service: _tasks)),
+    );
+    await _reload();
+  }
+
+  Future<void> _openBoard() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => BoardPage(service: _tasks)),
+    );
+    await _reload();
+  }
+
+  Future<void> _openSettings() async {
+    final settings = widget.settings;
+    if (settings == null) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SettingsPage(
+          controller: settings,
+          onLocaleChanged: widget.onLocaleChanged,
+          onQuickSync: widget.onQuickSync,
+          themeMode: widget.themeMode,
+          onThemeModeChanged: widget.onThemeModeChanged,
+        ),
+      ),
+    );
     await _reschedule();
   }
 
@@ -138,11 +238,29 @@ class _HomePageState extends State<HomePage> {
     switch (value) {
       case 'settings':
         _openSettings();
+      case 'lists':
+        _openLists();
       case 'zh':
         widget.onLocaleChanged(const Locale('zh'));
       case 'en':
         widget.onLocaleChanged(const Locale('en'));
     }
+  }
+
+  void _changeView(ViewFilter view) {
+    if (view == ViewFilter.board) {
+      _openBoard();
+      return;
+    }
+    setState(() {
+      _view = view;
+      if (view == ViewFilter.list &&
+          _selectedListId == null &&
+          _lists.isNotEmpty) {
+        _selectedListId = _lists.first.id;
+      }
+    });
+    _reload();
   }
 
   @override
@@ -169,38 +287,111 @@ class _HomePageState extends State<HomePage> {
                 decoration: InputDecoration(
                   hintText: l.addTask,
                   prefixIcon: const Icon(Icons.add_rounded),
-                  suffixIcon: _input.text.isEmpty ? null : null,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+              child: TextField(
+                controller: _search,
+                onChanged: (_) {
+                  setState(() {});
+                  _reload();
+                },
+                decoration: InputDecoration(
+                  hintText: l.searchTasks,
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: _search.text.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: l.clearSearch,
+                          onPressed: () {
+                            _search.clear();
+                            setState(() {});
+                            _reload();
+                          },
+                          icon: const Icon(Icons.clear_rounded),
+                        ),
                 ),
               ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: _PillTabs(
-                  current: _tab,
-                  onChanged: (v) {
-                    setState(() => _tab = v!);
-                    _reload();
-                  },
-                  l: l),
+              child: _ViewTabs(
+                current: _view,
+                onChanged: _changeView,
+                l: l,
+              ),
+            ),
+            if (_view == ViewFilter.list)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _selectedListId,
+                        isExpanded: true,
+                        decoration: InputDecoration(labelText: l.selectList),
+                        items: _lists
+                            .map((list) => DropdownMenuItem<String>(
+                                  value: list.id,
+                                  child: Text(list.name,
+                                      overflow: TextOverflow.ellipsis),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedListId = value);
+                          _reload();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: l.manageLists,
+                      onPressed: _openLists,
+                      icon: const Icon(Icons.tune_rounded),
+                    ),
+                  ],
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: _QueryControls(
+                sort: _sort,
+                status: _statusFilter,
+                l: l,
+                onSortChanged: (value) {
+                  setState(() => _sort = value);
+                  _reload();
+                },
+                onStatusChanged: (value) {
+                  setState(() => _statusFilter = value);
+                  _reload();
+                },
+              ),
             ),
             Expanded(
               child: _items.isEmpty
-                  ? _EmptyState(tab: _tab, l: l)
+                  ? _EmptyState(view: _view, l: l)
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       itemCount: _items.length,
-                      itemBuilder: (c, i) => Padding(
-                        padding: const EdgeInsets.only(bottom: 1),
-                        child: _TaskCard(
-                          task: _items[i],
-                          onTap: () => _openEdit(_items[i]),
-                          onToggle: (v) async {
-                            await _tasks.setDone(_items[i], v);
-                            await _reschedule();
-                            await _reload();
-                          },
-                        ),
-                      ),
+                      itemBuilder: (context, index) {
+                        final task = _items[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 1),
+                          child: _TaskCard(
+                            task: task,
+                            onTap: () => _openEdit(task),
+                            onToggle: (done) async {
+                              await _tasks.setDone(task, done);
+                              await _reschedule();
+                              await _reload();
+                            },
+                          ),
+                        );
+                      },
                     ),
             ),
           ],
@@ -217,13 +408,15 @@ class _AppHeader extends StatelessWidget {
   final VoidCallback onRecycle;
   final ValueChanged<String> onMenu;
   final bool hasSettings;
-  const _AppHeader(
-      {required this.title,
-      required this.l,
-      this.onQuickSync,
-      required this.onRecycle,
-      required this.onMenu,
-      required this.hasSettings});
+
+  const _AppHeader({
+    required this.title,
+    required this.l,
+    this.onQuickSync,
+    required this.onRecycle,
+    required this.onMenu,
+    required this.hasSettings,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -232,9 +425,14 @@ class _AppHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-              child: Text(title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700, letterSpacing: -0.4))),
+            child: Text(
+              title,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
           IconButton(
               tooltip: l.quickSync,
               onPressed: onQuickSync,
@@ -247,30 +445,31 @@ class _AppHeader extends StatelessWidget {
             tooltip: l.more,
             icon: const Icon(Icons.more_horiz_rounded),
             onSelected: onMenu,
-            itemBuilder: (c) => [
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'lists',
+                child: Row(children: [
+                  Icon(Icons.list_alt_rounded,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 10),
+                  Text(l.manageLists),
+                ]),
+              ),
               if (hasSettings)
                 PopupMenuItem(
-                    value: 'settings',
-                    child: Row(children: [
-                      Icon(Icons.settings_outlined,
-                          size: 20,
-                          color: Theme.of(c).colorScheme.onSurfaceVariant),
-                      const SizedBox(width: 10),
-                      Text(l.settings)
-                    ])),
+                  value: 'settings',
+                  child: Row(children: [
+                    Icon(Icons.settings_outlined,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 10),
+                    Text(l.settings),
+                  ]),
+                ),
               const PopupMenuDivider(),
-              PopupMenuItem(
-                  value: 'zh',
-                  child: Row(children: [
-                    const SizedBox(width: 2),
-                    Text(l.languageChinese)
-                  ])),
-              PopupMenuItem(
-                  value: 'en',
-                  child: Row(children: [
-                    const SizedBox(width: 2),
-                    Text(l.languageEnglish)
-                  ])),
+              PopupMenuItem(value: 'zh', child: Text(l.languageChinese)),
+              PopupMenuItem(value: 'en', child: Text(l.languageEnglish)),
             ],
           ),
         ],
@@ -279,83 +478,159 @@ class _AppHeader extends StatelessWidget {
   }
 }
 
-class _PillTabs extends StatelessWidget {
-  final String? current;
-  final ValueChanged<String?> onChanged;
+class _ViewTabs extends StatelessWidget {
+  final ViewFilter current;
+  final ValueChanged<ViewFilter> onChanged;
   final AppLocalizations l;
-  const _PillTabs(
-      {required this.current, required this.onChanged, required this.l});
+
+  const _ViewTabs({
+    required this.current,
+    required this.onChanged,
+    required this.l,
+  });
 
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      (btn: 'inbox', label: l.inbox, icon: Icons.inbox_rounded),
-      (btn: 'list', label: l.lists, icon: Icons.list_alt_rounded),
-      (btn: 'done', label: l.done, icon: Icons.check_rounded),
+      (view: ViewFilter.inbox, label: l.inbox, icon: Icons.inbox_rounded),
+      (view: ViewFilter.list, label: l.lists, icon: Icons.list_alt_rounded),
+      (view: ViewFilter.today, label: l.today, icon: Icons.today_rounded),
+      (view: ViewFilter.planned, label: l.planned, icon: Icons.event_rounded),
+      (view: ViewFilter.done, label: l.done, icon: Icons.check_rounded),
+      (view: ViewFilter.board, label: l.board, icon: Icons.view_kanban_rounded),
     ];
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: scheme.outlineVariant))),
-      child: Row(
-        children: tabs.map((t) {
-          final sel = current == t.btn;
-          return Expanded(
-            child: InkWell(
-              onTap: () => onChanged(t.btn),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(t.icon,
-                            size: 16,
-                            color:
-                                sel ? scheme.primary : scheme.onSurfaceVariant),
-                        const SizedBox(width: 6),
-                        Text(t.label,
-                            style: TextStyle(
-                                fontSize: 14,
-                                fontWeight:
-                                    sel ? FontWeight.w700 : FontWeight.w500,
-                                color: sel
-                                    ? scheme.primary
-                                    : scheme.onSurfaceVariant)),
-                      ],
-                    ),
-                  ),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    height: 2,
-                    width: sel ? 42 : 0,
-                    color: scheme.primary,
-                  ),
-                ],
-              ),
-            ),
+    return SizedBox(
+      height: 46,
+      child: ListView.separated(
+        key: const ValueKey('view-tabs'),
+        scrollDirection: Axis.horizontal,
+        itemCount: tabs.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final tab = tabs[index];
+          final selected = current == tab.view;
+          return ChoiceChip(
+            key: ValueKey('view-${tab.view.name}'),
+            selected: selected,
+            label: Text(tab.label),
+            avatar: Icon(tab.icon, size: 16),
+            onSelected: (_) => onChanged(tab.view),
+            labelStyle: TextStyle(
+                color: selected ? scheme.onPrimaryContainer : scheme.onSurface,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500),
           );
-        }).toList(),
+        },
       ),
     );
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  final String tab;
+class _QueryControls extends StatelessWidget {
+  final BySort sort;
+  final TaskStatus? status;
   final AppLocalizations l;
-  const _EmptyState({required this.tab, required this.l});
+  final ValueChanged<BySort> onSortChanged;
+  final ValueChanged<TaskStatus?> onStatusChanged;
+
+  const _QueryControls({
+    required this.sort,
+    required this.status,
+    required this.l,
+    required this.onSortChanged,
+    required this.onStatusChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<BySort>(
+            initialValue: sort,
+            isExpanded: true,
+            decoration: InputDecoration(labelText: l.filter),
+            items: [
+              DropdownMenuItem(
+                  value: BySort.dueAsc,
+                  child: Text(l.sortByDue, overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(
+                  value: BySort.createdDesc,
+                  child:
+                      Text(l.sortByCreated, overflow: TextOverflow.ellipsis)),
+              DropdownMenuItem(
+                  value: BySort.titleAsc,
+                  child: Text(l.sortByTitle, overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: (value) {
+              if (value != null) onSortChanged(value);
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            initialValue: status?.name ?? 'all',
+            isExpanded: true,
+            decoration: InputDecoration(labelText: l.statusField),
+            items: [
+              DropdownMenuItem(value: 'all', child: Text(l.allStatuses)),
+              DropdownMenuItem(value: 'todo', child: Text(l.todo)),
+              DropdownMenuItem(value: 'doing', child: Text(l.doing)),
+              DropdownMenuItem(value: 'done', child: Text(l.done)),
+            ],
+            onChanged: (value) => onStatusChanged(switch (value) {
+              'todo' => TaskStatus.todo,
+              'doing' => TaskStatus.doing,
+              'done' => TaskStatus.done,
+              _ => null,
+            }),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final ViewFilter view;
+  final AppLocalizations l;
+  const _EmptyState({required this.view, required this.l});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final l = AppLocalizations.of(context);
-    final (icon, title, sub) = switch (tab) {
-      'inbox' => (Icons.inbox_rounded, l.emptyInboxTitle, l.emptyInboxSubtitle),
-      'done' => (Icons.task_alt_rounded, l.emptyDoneTitle, l.emptyDoneSubtitle),
-      _ => (Icons.list_alt_rounded, l.emptyListTitle, l.emptyListSubtitle),
+    final (icon, title, sub) = switch (view) {
+      ViewFilter.inbox => (
+          Icons.inbox_rounded,
+          l.emptyInboxTitle,
+          l.emptyInboxSubtitle
+        ),
+      ViewFilter.today => (
+          Icons.today_rounded,
+          l.emptyTodayTitle,
+          l.emptyTodaySubtitle
+        ),
+      ViewFilter.planned => (
+          Icons.event_rounded,
+          l.emptyPlannedTitle,
+          l.emptyPlannedSubtitle
+        ),
+      ViewFilter.done => (
+          Icons.task_alt_rounded,
+          l.emptyDoneTitle,
+          l.emptyDoneSubtitle
+        ),
+      ViewFilter.board => (
+          Icons.view_kanban_rounded,
+          l.emptyBoardTitle,
+          l.emptyBoardSubtitle
+        ),
+      ViewFilter.list => (
+          Icons.list_alt_rounded,
+          l.emptyListTitle,
+          l.emptyListSubtitle
+        ),
     };
     return Center(
       child: Column(
@@ -487,12 +762,13 @@ class _TaskCard extends StatelessWidget {
 class _DueChip extends StatelessWidget {
   final DueDate due;
   const _DueChip({required this.due});
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final overdue = due.value.toLocal().isBefore(DateTime.now());
-    final urgent =
-        overdue || due.value.toLocal().difference(DateTime.now()).inDays == 0;
+    final local = due.value.toLocal();
+    final overdue = local.isBefore(DateTime.now());
+    final urgent = overdue || local.difference(DateTime.now()).inDays == 0;
     final scheme = Theme.of(context).colorScheme;
     final color = overdue
         ? scheme.error

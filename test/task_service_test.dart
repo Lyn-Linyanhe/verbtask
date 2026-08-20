@@ -45,6 +45,32 @@ void main() {
     expect(q.first.title, '早');
   });
 
+  test('查询支持截止时间的左闭右开边界', () async {
+    final svc = TaskService(InMemoryRepository());
+    await svc.create(title: '边界内', due: DueDate(DateTime.utc(2026, 1, 10, 9)));
+    await svc.create(title: '上界', due: DueDate(DateTime.utc(2026, 1, 11)));
+    await svc.create(title: '无日期', due: null);
+
+    final q = await svc.query(
+      dueFrom: DateTime.utc(2026, 1, 10),
+      dueTo: DateTime.utc(2026, 1, 11),
+    );
+
+    expect(q.map((t) => t.title), ['边界内']);
+  });
+
+  test('查询支持标题排序和排除已完成任务', () async {
+    final svc = TaskService(InMemoryRepository());
+    await svc.create(title: 'Zeta');
+    final done = await svc.create(title: 'Alpha', status: TaskStatus.done);
+
+    final active = await svc.query(by: BySort.titleAsc, includeDone: false);
+    expect(active.map((t) => t.title), ['Zeta']);
+
+    final all = await svc.query(status: TaskStatus.done, includeDone: false);
+    expect(all.single.id, done.id);
+  });
+
   test('删除清单会把任务移回收件箱并移除清单', () async {
     final repo = InMemoryRepository();
     final service = TaskService(repo);

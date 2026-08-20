@@ -12,6 +12,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Inbox'), findsOneWidget);
     expect(find.text('Inbox is empty'), findsOneWidget);
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('Planned'), findsOneWidget);
     expect(find.text('收件箱是空的'), findsNothing);
   });
 

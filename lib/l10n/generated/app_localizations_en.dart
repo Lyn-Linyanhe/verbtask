@@ -18,6 +18,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lists => 'Lists';
 
   @override
+  String get planned => 'Planned';
+
+  @override
+  String get board => 'Board';
+
+  @override
   String get todo => 'To Do';
 
   @override
@@ -40,6 +46,51 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get search => 'Search';
+
+  @override
+  String get searchTasks => 'Search tasks';
+
+  @override
+  String get filter => 'Filter';
+
+  @override
+  String get allStatuses => 'All statuses';
+
+  @override
+  String get sortByDue => 'Sort by due date';
+
+  @override
+  String get sortByCreated => 'Sort by created time';
+
+  @override
+  String get sortByTitle => 'Sort by title';
+
+  @override
+  String get clearSearch => 'Clear search';
+
+  @override
+  String get manageLists => 'Manage lists';
+
+  @override
+  String get newList => 'New list';
+
+  @override
+  String get editList => 'Edit list';
+
+  @override
+  String get deleteList => 'Delete list';
+
+  @override
+  String get listName => 'List name';
+
+  @override
+  String get selectList => 'Select a list';
+
+  @override
+  String get noLists => 'No lists yet';
+
+  @override
+  String get deleteListConfirm => 'Tasks in this list will move to Inbox.';
 
   @override
   String get cancel => 'Cancel';
@@ -97,6 +148,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyListSubtitle => 'Organize tasks into lists';
+
+  @override
+  String get emptyTodayTitle => 'Nothing due today';
+
+  @override
+  String get emptyTodaySubtitle => 'Tasks due today will appear here';
+
+  @override
+  String get emptyPlannedTitle => 'No planned tasks yet';
+
+  @override
+  String get emptyPlannedSubtitle => 'Add a due date to see a task here';
+
+  @override
+  String get emptyBoardTitle => 'The board is empty';
+
+  @override
+  String get emptyBoardSubtitle => 'Tasks will be grouped by status here';
 
   @override
   String dateMonthDay(Object day, Object month) {

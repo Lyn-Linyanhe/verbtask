@@ -97,6 +97,8 @@ class TaskService {
     return list;
   }
 
+  Future<List<TaskList>> allLists() => _repo.allLists();
+
   Future<TaskList> editList(
     TaskList list, {
     String? name,
@@ -126,10 +128,16 @@ class TaskService {
     String? listId,
     TaskStatus? status,
     bool includeDeleted = false,
+    bool includeDone = true,
+    DateTime? dueFrom,
+    DateTime? dueTo,
     BySort by = BySort.dueAsc,
   }) async {
     var ts = await _repo.allTasks();
     if (!includeDeleted) ts = ts.where((t) => !t.deleted).toList();
+    if (!includeDone && status != TaskStatus.done) {
+      ts = ts.where((t) => t.status != TaskStatus.done).toList();
+    }
     if (search != null && search.isNotEmpty) {
       final q = search.toLowerCase();
       ts = ts
@@ -140,11 +148,26 @@ class TaskService {
     }
     if (listId != null) ts = ts.where((t) => t.listId == listId).toList();
     if (status != null) ts = ts.where((t) => t.status == status).toList();
+    if (dueFrom != null || dueTo != null) {
+      ts = ts.where((t) {
+        final due = t.due?.value;
+        if (due == null) return false;
+        if (dueFrom != null && due.isBefore(dueFrom)) return false;
+        if (dueTo != null && !due.isBefore(dueTo)) return false;
+        return true;
+      }).toList();
+    }
     switch (by) {
       case BySort.dueAsc:
         ts.sort((a, b) => _dueKey(a.due).compareTo(_dueKey(b.due)));
       case BySort.createdDesc:
         ts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      case BySort.titleAsc:
+        ts.sort((a, b) {
+          final byTitle =
+              a.title.toLowerCase().compareTo(b.title.toLowerCase());
+          return byTitle == 0 ? a.createdAt.compareTo(b.createdAt) : byTitle;
+        });
     }
     return ts;
   }
@@ -154,4 +177,4 @@ class TaskService {
 
 const Object _sentinel = Object();
 
-enum BySort { dueAsc, createdDesc }
+enum BySort { dueAsc, createdDesc, titleAsc }

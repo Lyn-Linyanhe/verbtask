@@ -116,6 +116,18 @@ abstract class AppLocalizations {
   /// **'Lists'**
   String get lists;
 
+  /// No description provided for @planned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get planned;
+
+  /// No description provided for @board.
+  ///
+  /// In en, this message translates to:
+  /// **'Board'**
+  String get board;
+
   /// No description provided for @todo.
   ///
   /// In en, this message translates to:
@@ -163,6 +175,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search'**
   String get search;
+
+  /// No description provided for @searchTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tasks'**
+  String get searchTasks;
+
+  /// No description provided for @filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get filter;
+
+  /// No description provided for @allStatuses.
+  ///
+  /// In en, this message translates to:
+  /// **'All statuses'**
+  String get allStatuses;
+
+  /// No description provided for @sortByDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by due date'**
+  String get sortByDue;
+
+  /// No description provided for @sortByCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by created time'**
+  String get sortByCreated;
+
+  /// No description provided for @sortByTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by title'**
+  String get sortByTitle;
+
+  /// No description provided for @clearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get clearSearch;
+
+  /// No description provided for @manageLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage lists'**
+  String get manageLists;
+
+  /// No description provided for @newList.
+  ///
+  /// In en, this message translates to:
+  /// **'New list'**
+  String get newList;
+
+  /// No description provided for @editList.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit list'**
+  String get editList;
+
+  /// No description provided for @deleteList.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete list'**
+  String get deleteList;
+
+  /// No description provided for @listName.
+  ///
+  /// In en, this message translates to:
+  /// **'List name'**
+  String get listName;
+
+  /// No description provided for @selectList.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a list'**
+  String get selectList;
+
+  /// No description provided for @noLists.
+  ///
+  /// In en, this message translates to:
+  /// **'No lists yet'**
+  String get noLists;
+
+  /// No description provided for @deleteListConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks in this list will move to Inbox.'**
+  String get deleteListConfirm;
 
   /// No description provided for @cancel.
   ///
@@ -265,6 +367,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Organize tasks into lists'**
   String get emptyListSubtitle;
+
+  /// No description provided for @emptyTodayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing due today'**
+  String get emptyTodayTitle;
+
+  /// No description provided for @emptyTodaySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks due today will appear here'**
+  String get emptyTodaySubtitle;
+
+  /// No description provided for @emptyPlannedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No planned tasks yet'**
+  String get emptyPlannedTitle;
+
+  /// No description provided for @emptyPlannedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a due date to see a task here'**
+  String get emptyPlannedSubtitle;
+
+  /// No description provided for @emptyBoardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The board is empty'**
+  String get emptyBoardTitle;
+
+  /// No description provided for @emptyBoardSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks will be grouped by status here'**
+  String get emptyBoardSubtitle;
 
   /// No description provided for @dateMonthDay.
   ///

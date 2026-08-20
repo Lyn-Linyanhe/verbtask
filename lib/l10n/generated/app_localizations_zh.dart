@@ -18,6 +18,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lists => '清单';
 
   @override
+  String get planned => '计划';
+
+  @override
+  String get board => '看板';
+
+  @override
   String get todo => '未开始';
 
   @override
@@ -40,6 +46,51 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get search => '搜索';
+
+  @override
+  String get searchTasks => '搜索任务';
+
+  @override
+  String get filter => '筛选';
+
+  @override
+  String get allStatuses => '全部状态';
+
+  @override
+  String get sortByDue => '按截止时间';
+
+  @override
+  String get sortByCreated => '按创建时间';
+
+  @override
+  String get sortByTitle => '按标题';
+
+  @override
+  String get clearSearch => '清除搜索';
+
+  @override
+  String get manageLists => '管理清单';
+
+  @override
+  String get newList => '新建清单';
+
+  @override
+  String get editList => '编辑清单';
+
+  @override
+  String get deleteList => '删除清单';
+
+  @override
+  String get listName => '清单名称';
+
+  @override
+  String get selectList => '选择清单';
+
+  @override
+  String get noLists => '还没有清单';
+
+  @override
+  String get deleteListConfirm => '删除清单后，其中的任务会移回收件箱。';
 
   @override
   String get cancel => '取消';
@@ -97,6 +148,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get emptyListSubtitle => '把任务归入清单，分门别类';
+
+  @override
+  String get emptyTodayTitle => '今天没有待办';
+
+  @override
+  String get emptyTodaySubtitle => '今天要做的任务会显示在这里';
+
+  @override
+  String get emptyPlannedTitle => '还没有计划任务';
+
+  @override
+  String get emptyPlannedSubtitle => '给任务设置截止日期后，它会出现在这里';
+
+  @override
+  String get emptyBoardTitle => '看板是空的';
+
+  @override
+  String get emptyBoardSubtitle => '任务状态会按列显示在这里';
 
   @override
   String dateMonthDay(Object day, Object month) {
