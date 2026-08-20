@@ -314,7 +314,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           ? l.serverTokenHint
                           : l.clientTokenHint)),
             ])),
-        _Section(
+        if (Platform.isWindows)
+          _Section(
             title: l.windowsSystem,
             child: Column(children: [
               SwitchListTile(
