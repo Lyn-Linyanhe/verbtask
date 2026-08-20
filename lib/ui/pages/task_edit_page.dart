@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../core/models/models.dart';
 import '../../core/services/task_service.dart';
-import '../theme/app_theme.dart';
 
 class TaskEditPage extends StatefulWidget {
   final Task task;
@@ -27,60 +27,87 @@ class _TaskEditPageState extends State<TaskEditPage> {
   }
 
   @override
-  void dispose() { _title.dispose(); _notes.dispose(); _rrule.dispose(); super.dispose(); }
+  void dispose() {
+    _title.dispose();
+    _notes.dispose();
+    _rrule.dispose();
+    super.dispose();
+  }
 
   Future<void> _save() async {
     final rr = _rrule.text.trim();
     await widget.service.edit(widget.task,
-        title: _title.text.trim(), notes: _notes.text.trim(), status: _status,
+        title: _title.text.trim(),
+        notes: _notes.text.trim(),
+        status: _status,
         rrule: rr.isEmpty ? null : rr);
     if (mounted) Navigator.pop(context, true);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('编辑任务')),
+      appBar: AppBar(title: Text(l.editTask)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Card(child: Padding(
+          Card(
+              child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const _SectionLabel('基本信息'),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _SectionLabel(l.basicInformation),
               const SizedBox(height: 10),
-              TextField(controller: _title, decoration: const InputDecoration(labelText: '标题')),
+              TextField(
+                  controller: _title,
+                  decoration: InputDecoration(labelText: l.titleField)),
               const SizedBox(height: 14),
-              TextField(controller: _notes, maxLines: 3, decoration: const InputDecoration(labelText: '备注')),
+              TextField(
+                  controller: _notes,
+                  maxLines: 3,
+                  decoration: InputDecoration(labelText: l.notesField)),
               const SizedBox(height: 14),
               DropdownButtonFormField<TaskStatus>(
                 initialValue: _status,
-                decoration: const InputDecoration(labelText: '状态'),
-                items: TaskStatus.values.map((s) => DropdownMenuItem(value: s, child: Text(_statusLabel(s)))).toList(),
+                decoration: InputDecoration(labelText: l.statusField),
+                items: TaskStatus.values
+                    .map((s) => DropdownMenuItem(
+                        value: s, child: Text(_statusLabel(s, l))))
+                    .toList(),
                 onChanged: (v) => setState(() => _status = v ?? _status),
               ),
             ]),
           )),
           const SizedBox(height: 14),
-          Card(child: Padding(
+          Card(
+              child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const _SectionLabel('安排'),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _SectionLabel(l.scheduling),
               const SizedBox(height: 10),
-              TextField(controller: _rrule, decoration: const InputDecoration(labelText: '重复规则 (RRULE)', hintText: 'FREQ=DAILY')),
+              TextField(
+                  controller: _rrule,
+                  decoration: InputDecoration(
+                      labelText: l.repeatRule, hintText: l.repeatRuleHint)),
             ]),
           )),
           const SizedBox(height: 26),
-          FilledButton(onPressed: _save, style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)), child: const Text('保存')),
+          FilledButton(
+              onPressed: _save,
+              style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52)),
+              child: Text(l.save)),
         ],
       ),
     );
   }
 
-  String _statusLabel(TaskStatus s) => switch (s) {
-        TaskStatus.todo => '未开始',
-        TaskStatus.doing => '进行中',
-        TaskStatus.done => '已完成',
+  String _statusLabel(TaskStatus s, AppLocalizations l) => switch (s) {
+        TaskStatus.todo => l.todo,
+        TaskStatus.doing => l.doing,
+        TaskStatus.done => l.done,
       };
 }
 
@@ -88,5 +115,9 @@ class _SectionLabel extends StatelessWidget {
   final String text;
   const _SectionLabel(this.text);
   @override
-  Widget build(BuildContext context) => Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: AppColors.muted));
+  Widget build(BuildContext context) => Text(text,
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: Theme.of(context).colorScheme.onSurfaceVariant));
 }

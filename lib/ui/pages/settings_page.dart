@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../core/settings/settings_controller.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -63,36 +64,39 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _export() async {
+    final l = AppLocalizations.of(context);
     final f = widget.backupFile ?? File('verb_backup.json');
     final json = await widget.controller.exportTo(f);
-    _snack('已导出 ${json.length} 字符');
+    _snack(l.exportedCharacters(json.length));
   }
 
   Future<void> _import() async {
+    final l = AppLocalizations.of(context);
     final f = widget.backupFile ?? File('verb_backup.json');
     if (!f.existsSync()) {
-      _snack('备份文件不存在');
+      _snack(l.backupFileMissing);
       return;
     }
     final n = await widget.controller.importFrom(f);
-    _snack('已导入 $n 条任务');
+    _snack(l.importedTasks(n));
   }
 
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
+    final l = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('设置')),
+      appBar: AppBar(title: Text(l.settings)),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         _Section(
-            title: '语言',
+            title: l.language,
             child: DropdownButtonFormField<String>(
               initialValue: c.language,
               decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.translate_rounded)),
-              items: const [
-                DropdownMenuItem(value: 'zh', child: Text('中文')),
-                DropdownMenuItem(value: 'en', child: Text('English'))
+              items: [
+                DropdownMenuItem(value: 'zh', child: Text(l.languageChinese)),
+                DropdownMenuItem(value: 'en', child: Text(l.languageEnglish))
               ],
               onChanged: (v) {
                 if (v == null) return;
@@ -101,20 +105,20 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             )),
         _Section(
-            title: '外观',
+            title: l.appearance,
             child: SegmentedButton<ThemeMode>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                     value: ThemeMode.system,
-                    label: Text('跟随系统'),
+                    label: Text(l.themeSystem),
                     icon: Icon(Icons.brightness_auto_rounded, size: 16)),
                 ButtonSegment(
                     value: ThemeMode.light,
-                    label: Text('浅色'),
+                    label: Text(l.themeLight),
                     icon: Icon(Icons.light_mode_rounded, size: 16)),
                 ButtonSegment(
                     value: ThemeMode.dark,
-                    label: Text('深色'),
+                    label: Text(l.themeDark),
                     icon: Icon(Icons.dark_mode_rounded, size: 16)),
               ],
               selected: {_themeMode},
@@ -128,13 +132,13 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             )),
         _Section(
-            title: 'LLM 增强解析',
+            title: l.llmEnhancedParsing,
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('开启后任务文本将发送到你填写的服务'),
-                subtitle: const Text('默认关闭；本地离线解析始终可用',
+                title: Text(l.llmSendTaskTextDescription),
+                subtitle: Text(l.llmOfflineParsingDescription,
                     style: TextStyle(fontSize: 12)),
                 value: c.llmEnabled == 1,
                 activeThumbColor: Theme.of(context).colorScheme.primary,
@@ -144,35 +148,33 @@ class _SettingsPageState extends State<SettingsPage> {
               TextField(
                   controller: _llmUrl,
                   onChanged: (v) => c.llmBaseUrl = v,
-                  decoration:
-                      const InputDecoration(labelText: 'Base URL（OpenAI 兼容）')),
+                  decoration: InputDecoration(labelText: l.baseUrlLabel)),
               const SizedBox(height: 12),
               TextField(
                   controller: _llmKey,
                   onChanged: (v) => c.llmKey = v,
                   obscureText: true,
-                  decoration:
-                      const InputDecoration(labelText: 'API Key（本地保存）')),
+                  decoration: InputDecoration(labelText: l.apiKeyLabel)),
             ])),
         _Section(
-            title: '同步与提醒',
+            title: l.syncAndReminders,
             child: Column(children: [
               _NumberField(
-                  label: '自动同步间隔（分钟）',
+                  label: l.autoSyncIntervalMinutes,
                   controller: _syncMin,
                   onChanged: (v) =>
                       c.syncAutoIntervalMin = int.tryParse(v) ?? 30),
               const SizedBox(height: 12),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('使用默认提醒'),
+                title: Text(l.useDefaultReminder),
                 value: c.notifyDefaultReminderEnabled,
                 onChanged: (v) =>
                     setState(() => c.notifyDefaultReminderEnabled = v),
               ),
               const SizedBox(height: 4),
               _NumberField(
-                  label: '默认提醒提前（分钟）',
+                  label: l.defaultReminderAdvanceMinutes,
                   controller: _notifyMin,
                   onChanged: (v) {
                     final parsed = int.tryParse(v);
@@ -185,13 +187,13 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: OutlinedButton.icon(
                         onPressed: _export,
                         icon: const Icon(Icons.upload_file_rounded),
-                        label: const Text('导出备份'))),
+                        label: Text(l.exportBackup))),
                 const SizedBox(width: 10),
                 Expanded(
                     child: OutlinedButton.icon(
                         onPressed: _import,
                         icon: const Icon(Icons.download_rounded),
-                        label: const Text('导入恢复'))),
+                        label: Text(l.importBackup))),
               ]),
               const SizedBox(height: 10),
               SizedBox(
@@ -199,21 +201,21 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: FilledButton.icon(
                       onPressed: widget.onQuickSync ?? () {},
                       icon: const Icon(Icons.sync_rounded),
-                      label: const Text('快速同步'))),
+                      label: Text(l.quickSync))),
             ])),
         _Section(
-            title: 'Windows 系统',
+            title: l.windowsSystem,
             child: Column(children: [
               SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('托盘常驻'),
+                  title: Text(l.keepInTray),
                   value: c.trayEnabled,
                   activeThumbColor: Theme.of(context).colorScheme.primary,
                   onChanged: (v) => setState(() => c.trayEnabled = v)),
               const Divider(height: 1),
               SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('开机自启'),
+                  title: Text(l.launchAtStartup),
                   value: c.autostartEnabled,
                   activeThumbColor: Theme.of(context).colorScheme.primary,
                   onChanged: (v) => setState(() => c.autostartEnabled = v)),

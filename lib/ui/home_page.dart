@@ -66,24 +66,25 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _quickAdd(String text) async {
     final r = _nlp.parseLocal(text);
+    final l = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(AppLocalizations.of(ctx).addTask),
         content: Text(
-          '标题: ${r.title ?? '（未识别）'}\n'
-          '截止: ${r.due?.value ?? '（无）'}\n'
-          '重复: ${r.rrule ?? '（无）'}',
+          '${l.parseTitle(r.title ?? l.unrecognized)}\n'
+          '${l.parseDue(r.due?.value.toLocal() ?? l.none)}\n'
+          '${l.parseRepeat(r.rrule ?? l.none)}',
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: Text('取消',
+              child: Text(l.cancel,
                   style: TextStyle(
                       color: Theme.of(ctx).colorScheme.onSurfaceVariant))),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('确认')),
+              child: Text(l.confirm)),
         ],
       ),
     );
@@ -154,6 +155,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             _AppHeader(
               title: l.appTitle,
+              l: l,
               onQuickSync: widget.onQuickSync,
               onRecycle: _openBin,
               onMenu: _onMenu,
@@ -210,12 +212,14 @@ class _HomePageState extends State<HomePage> {
 
 class _AppHeader extends StatelessWidget {
   final String title;
+  final AppLocalizations l;
   final VoidCallback? onQuickSync;
   final VoidCallback onRecycle;
   final ValueChanged<String> onMenu;
   final bool hasSettings;
   const _AppHeader(
       {required this.title,
+      required this.l,
       this.onQuickSync,
       required this.onRecycle,
       required this.onMenu,
@@ -232,15 +236,15 @@ class _AppHeader extends StatelessWidget {
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700, letterSpacing: -0.4))),
           IconButton(
-              tooltip: '快速同步',
+              tooltip: l.quickSync,
               onPressed: onQuickSync,
               icon: const Icon(Icons.sync_rounded)),
           IconButton(
-              tooltip: '回收站',
+              tooltip: l.recycleBin,
               onPressed: onRecycle,
               icon: const Icon(Icons.delete_outline_rounded)),
           PopupMenuButton<String>(
-            tooltip: '更多',
+            tooltip: l.more,
             icon: const Icon(Icons.more_horiz_rounded),
             onSelected: onMenu,
             itemBuilder: (c) => [
@@ -252,15 +256,21 @@ class _AppHeader extends StatelessWidget {
                           size: 20,
                           color: Theme.of(c).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 10),
-                      const Text('设置')
+                      Text(l.settings)
                     ])),
               const PopupMenuDivider(),
-              const PopupMenuItem(
+              PopupMenuItem(
                   value: 'zh',
-                  child: Row(children: [SizedBox(width: 2), Text('中文')])),
-              const PopupMenuItem(
+                  child: Row(children: [
+                    const SizedBox(width: 2),
+                    Text(l.languageChinese)
+                  ])),
+              PopupMenuItem(
                   value: 'en',
-                  child: Row(children: [SizedBox(width: 2), Text('English')])),
+                  child: Row(children: [
+                    const SizedBox(width: 2),
+                    Text(l.languageEnglish)
+                  ])),
             ],
           ),
         ],
@@ -341,10 +351,11 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     final (icon, title, sub) = switch (tab) {
-      'inbox' => (Icons.inbox_rounded, '收件箱是空的', '把要做的事记下来，随手完成'),
-      'done' => (Icons.task_alt_rounded, '还没有已完成的任务', '勾选任务即可在这里看到'),
-      _ => (Icons.list_alt_rounded, '还没有清单任务', '把任务归入清单，分门别类'),
+      'inbox' => (Icons.inbox_rounded, l.emptyInboxTitle, l.emptyInboxSubtitle),
+      'done' => (Icons.task_alt_rounded, l.emptyDoneTitle, l.emptyDoneSubtitle),
+      _ => (Icons.list_alt_rounded, l.emptyListTitle, l.emptyListSubtitle),
     };
     return Center(
       child: Column(
@@ -442,7 +453,7 @@ class _TaskCard extends StatelessWidget {
                         Icon(Icons.schedule_rounded,
                             size: 13, color: scheme.onSurfaceVariant),
                         const SizedBox(width: 3),
-                        Text(_fmt(task.due!),
+                        Text(_fmt(task.due!, AppLocalizations.of(context)),
                             style: TextStyle(
                                 fontSize: 12, color: scheme.onSurfaceVariant)),
                       ]),
@@ -463,13 +474,13 @@ class _TaskCard extends StatelessWidget {
     );
   }
 
-  String _fmt(DueDate due) {
+  String _fmt(DueDate due, AppLocalizations l) {
     final d = due.value.toLocal();
-    final m = '${d.month}月${d.day}日';
-    if (due.dateOnly) return m;
+    final date = l.dateMonthDay(d.day, d.month);
+    if (due.dateOnly) return date;
     final h = d.hour.toString().padLeft(2, '0');
     final min = d.minute.toString().padLeft(2, '0');
-    return '$m $h:$min';
+    return '$date $h:$min';
   }
 }
 
@@ -478,6 +489,7 @@ class _DueChip extends StatelessWidget {
   const _DueChip({required this.due});
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final overdue = due.value.toLocal().isBefore(DateTime.now());
     final urgent =
         overdue || due.value.toLocal().difference(DateTime.now()).inDays == 0;
@@ -485,7 +497,7 @@ class _DueChip extends StatelessWidget {
     final color = overdue
         ? scheme.error
         : (urgent ? scheme.primary : scheme.onSurfaceVariant);
-    return Text(overdue ? '已逾期' : (urgent ? '今天' : '有期限'),
+    return Text(overdue ? l.overdue : (urgent ? l.today : l.hasDueDate),
         style:
             TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color));
   }

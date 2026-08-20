@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:verb_app/core/settings/local_settings.dart';
 import 'package:verb_app/core/settings/settings_controller.dart';
 import 'package:verb_app/core/storage/inmemory_repository.dart';
+import 'package:verb_app/l10n/generated/app_localizations.dart';
 import 'package:verb_app/ui/pages/settings_page.dart';
 
 void main() {
@@ -20,6 +21,9 @@ void main() {
       );
       final backupFile = File('${dir.path}/backup.json');
       await tester.pumpWidget(MaterialApp(
+        locale: const Locale('zh'),
+        supportedLocales: const [Locale('en'), Locale('zh')],
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: SettingsPage(
           controller: controller,
           onLocaleChanged: (l) => changed = l,

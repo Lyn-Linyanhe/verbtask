@@ -1,43 +1,78 @@
 import 'package:flutter/material.dart';
 
-/// VerbTask 视觉 token —— 暖纸底 + 深青主色 + 卡片化层次（含深色模式）。
+/// VerbTask visual tokens: cool neutral canvas, indigo actions, and semantic status colors.
 class AppColors {
   AppColors._();
-  static const paper = Color(0xFFF6F4EF);
+  static const paper = Color(0xFFF6F7FB);
   static const surface = Color(0xFFFFFFFF);
-  static const primary = Color(0xFF0D6E6E);
-  static const primarySoft = Color(0xFFCDE9E4);
-  static const accent = Color(0xFFE2743B);
-  static const text = Color(0xFF1F2937);
-  static const muted = Color(0xFF6B7280);
-  static const done = Color(0xFF3B7F5E);
-  static const line = Color(0xFFE7E2D8);
+  static const primary = Color(0xFF5367E8);
+  static const primarySoft = Color(0xFFE9ECFF);
+  static const accent = Color(0xFFC94A4A);
+  static const text = Color(0xFF18202A);
+  static const muted = Color(0xFF667085);
+  static const done = Color(0xFF2E946B);
+  static const line = Color(0xFFE3E7EF);
 
-  // 深色
-  static const darkPaper = Color(0xFF16140F);
-  static const darkSurface = Color(0xFF211E18);
-  static const darkPrimary = Color(0xFF6FD0C6);
-  static const darkPrimarySoft = Color(0xFF1F3B37);
-  static const darkAccent = Color(0xFFF09A6C);
-  static const darkText = Color(0xFFF1EFE9);
-  static const darkMuted = Color(0xFFA9A295);
-  static const darkDone = Color(0xFF7FC49B);
-  static const darkLine = Color(0xFF3A362E);
+  static const darkPaper = Color(0xFF10131A);
+  static const darkSurface = Color(0xFF191E28);
+  static const darkPrimary = Color(0xFF8A96FF);
+  static const darkPrimarySoft = Color(0xFF293052);
+  static const darkAccent = Color(0xFFFF7E7E);
+  static const darkText = Color(0xFFF1F3F7);
+  static const darkMuted = Color(0xFFA2ABBB);
+  static const darkDone = Color(0xFF68C69B);
+  static const darkLine = Color(0xFF303846);
 }
 
-ThemeData buildAppTheme() => _theme(Brightness.light, AppColors.paper, AppColors.surface, AppColors.primary, AppColors.primarySoft, AppColors.text, AppColors.muted, AppColors.line, AppColors.done);
+ThemeData buildAppTheme() => _theme(
+    Brightness.light,
+    AppColors.paper,
+    AppColors.surface,
+    AppColors.primary,
+    AppColors.primarySoft,
+    AppColors.text,
+    AppColors.muted,
+    AppColors.line,
+    AppColors.done);
 
-ThemeData buildDarkTheme() => _theme(Brightness.dark, AppColors.darkPaper, AppColors.darkSurface, AppColors.darkPrimary, AppColors.darkPrimarySoft, AppColors.darkText, AppColors.darkMuted, AppColors.darkLine, AppColors.darkDone);
+ThemeData buildDarkTheme() => _theme(
+    Brightness.dark,
+    AppColors.darkPaper,
+    AppColors.darkSurface,
+    AppColors.darkPrimary,
+    AppColors.darkPrimarySoft,
+    AppColors.darkText,
+    AppColors.darkMuted,
+    AppColors.darkLine,
+    AppColors.darkDone);
 
-ThemeData _theme(Brightness brightness, Color paper, Color surface, Color primary, Color primarySoft, Color text, Color muted, Color line, Color done) {
-  final scheme = ColorScheme.fromSeed(seedColor: primary, brightness: brightness).copyWith(
+ThemeData _theme(
+    Brightness brightness,
+    Color paper,
+    Color surface,
+    Color primary,
+    Color primarySoft,
+    Color text,
+    Color muted,
+    Color line,
+    Color done) {
+  final scheme =
+      ColorScheme.fromSeed(seedColor: primary, brightness: brightness).copyWith(
     primary: primary,
-    onPrimary: brightness == Brightness.dark ? const Color(0xFF101312) : Colors.white,
+    onPrimary:
+        brightness == Brightness.dark ? const Color(0xFF101312) : Colors.white,
     surface: surface,
     onSurface: text,
+    tertiary: done,
+    onTertiary: Colors.white,
+    error:
+        brightness == Brightness.dark ? AppColors.darkAccent : AppColors.accent,
+    surfaceContainerLowest: paper,
+    surfaceContainerLow: paper,
     outline: line,
   );
-  final base = ThemeData(useMaterial3: true, colorScheme: scheme, brightness: brightness);
+  final base = ThemeData(
+      useMaterial3: true, colorScheme: scheme, brightness: brightness);
   return base.copyWith(
     scaffoldBackgroundColor: paper,
     canvasColor: paper,
@@ -47,7 +82,11 @@ ThemeData _theme(Brightness brightness, Color paper, Color surface, Color primar
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      titleTextStyle: TextStyle(color: text, fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.3),
+      titleTextStyle: TextStyle(
+          color: text,
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3),
       iconTheme: IconThemeData(color: text, size: 22),
       actionsIconTheme: IconThemeData(color: text, size: 22),
     ),
@@ -55,37 +94,59 @@ ThemeData _theme(Brightness brightness, Color paper, Color surface, Color primar
       color: surface,
       elevation: 0,
       margin: EdgeInsets.zero,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+      shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
+          side: BorderSide(color: line)),
       clipBehavior: Clip.antiAlias,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       hintStyle: TextStyle(color: muted),
       prefixIconColor: muted,
       suffixIconColor: muted,
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: line)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: primary, width: 1.5)),
+      enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: line)),
+      focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: primary, width: 1.5)),
     ),
     dividerColor: line,
-    listTileTheme: ListTileThemeData(iconColor: muted),
-    snackBarTheme: SnackBarThemeData(behavior: SnackBarBehavior.floating, backgroundColor: text, contentTextStyle: const TextStyle(color: Colors.white)),
+    dividerTheme: DividerThemeData(color: line, thickness: 1, space: 1),
+    listTileTheme:
+        ListTileThemeData(iconColor: muted, contentPadding: EdgeInsets.zero),
+    snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: text,
+        contentTextStyle: const TextStyle(color: Colors.white)),
+    dialogTheme: DialogThemeData(
+      backgroundColor: surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: primary,
-        foregroundColor: brightness == Brightness.dark ? const Color(0xFF101312) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        foregroundColor: brightness == Brightness.dark
+            ? const Color(0xFF101312)
+            : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(foregroundColor: primary, side: BorderSide(color: line), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+      style: OutlinedButton.styleFrom(
+          foregroundColor: primary,
+          side: BorderSide(color: line),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
     ),
     popupMenuTheme: PopupMenuThemeData(
       color: surface,
       textStyle: TextStyle(color: text),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ),
   );
 }

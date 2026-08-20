@@ -163,6 +163,336 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search'**
   String get search;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @parseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title: {value}'**
+  String parseTitle(Object value);
+
+  /// No description provided for @parseDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due: {value}'**
+  String parseDue(Object value);
+
+  /// No description provided for @parseRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat: {value}'**
+  String parseRepeat(Object value);
+
+  /// No description provided for @unrecognized.
+  ///
+  /// In en, this message translates to:
+  /// **'Unrecognized'**
+  String get unrecognized;
+
+  /// No description provided for @none.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get none;
+
+  /// No description provided for @recycleBin.
+  ///
+  /// In en, this message translates to:
+  /// **'Recycle bin'**
+  String get recycleBin;
+
+  /// No description provided for @more.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get more;
+
+  /// No description provided for @languageChinese.
+  ///
+  /// In en, this message translates to:
+  /// **'中文'**
+  String get languageChinese;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
+  /// No description provided for @emptyInboxTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox is empty'**
+  String get emptyInboxTitle;
+
+  /// No description provided for @emptyInboxSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture something to do and finish it here'**
+  String get emptyInboxSubtitle;
+
+  /// No description provided for @emptyDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed tasks yet'**
+  String get emptyDoneTitle;
+
+  /// No description provided for @emptyDoneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed tasks will appear here'**
+  String get emptyDoneSubtitle;
+
+  /// No description provided for @emptyListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No list tasks yet'**
+  String get emptyListTitle;
+
+  /// No description provided for @emptyListSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Organize tasks into lists'**
+  String get emptyListSubtitle;
+
+  /// No description provided for @dateMonthDay.
+  ///
+  /// In en, this message translates to:
+  /// **'{month}/{day}'**
+  String dateMonthDay(Object day, Object month);
+
+  /// No description provided for @overdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get overdue;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @hasDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Has due date'**
+  String get hasDueDate;
+
+  /// No description provided for @editTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit task'**
+  String get editTask;
+
+  /// No description provided for @basicInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic information'**
+  String get basicInformation;
+
+  /// No description provided for @titleField.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get titleField;
+
+  /// No description provided for @notesField.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notesField;
+
+  /// No description provided for @statusField.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get statusField;
+
+  /// No description provided for @scheduling.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduling'**
+  String get scheduling;
+
+  /// No description provided for @repeatRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat rule (RRULE)'**
+  String get repeatRule;
+
+  /// No description provided for @repeatRuleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'FREQ=DAILY'**
+  String get repeatRuleHint;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @exportedCharacters.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported {count} characters'**
+  String exportedCharacters(Object count);
+
+  /// No description provided for @backupFileMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup file not found'**
+  String get backupFileMissing;
+
+  /// No description provided for @importedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {count} tasks'**
+  String importedTasks(Object count);
+
+  /// No description provided for @appearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearance;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @llmEnhancedParsing.
+  ///
+  /// In en, this message translates to:
+  /// **'LLM-enhanced parsing'**
+  String get llmEnhancedParsing;
+
+  /// No description provided for @llmSendTaskTextDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, task text is sent to the service you provide'**
+  String get llmSendTaskTextDescription;
+
+  /// No description provided for @llmOfflineParsingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Off by default; offline parsing is always available'**
+  String get llmOfflineParsingDescription;
+
+  /// No description provided for @baseUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Base URL (OpenAI-compatible)'**
+  String get baseUrlLabel;
+
+  /// No description provided for @apiKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'API key (stored locally)'**
+  String get apiKeyLabel;
+
+  /// No description provided for @syncAndReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync and reminders'**
+  String get syncAndReminders;
+
+  /// No description provided for @autoSyncIntervalMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-sync interval (minutes)'**
+  String get autoSyncIntervalMinutes;
+
+  /// No description provided for @useDefaultReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Use default reminder'**
+  String get useDefaultReminder;
+
+  /// No description provided for @defaultReminderAdvanceMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Default reminder lead time (minutes)'**
+  String get defaultReminderAdvanceMinutes;
+
+  /// No description provided for @exportBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Export backup'**
+  String get exportBackup;
+
+  /// No description provided for @importBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Import backup'**
+  String get importBackup;
+
+  /// No description provided for @windowsSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows system'**
+  String get windowsSystem;
+
+  /// No description provided for @keepInTray.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep in system tray'**
+  String get keepInTray;
+
+  /// No description provided for @launchAtStartup.
+  ///
+  /// In en, this message translates to:
+  /// **'Launch at startup'**
+  String get launchAtStartup;
+
+  /// No description provided for @emptyRecycleBinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recycle bin is empty'**
+  String get emptyRecycleBinTitle;
+
+  /// No description provided for @emptyRecycleBinSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted tasks appear here and can be restored'**
+  String get emptyRecycleBinSubtitle;
+
+  /// No description provided for @restore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get restore;
+
+  /// No description provided for @deletePermanently.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete permanently'**
+  String get deletePermanently;
 }
 
 class _AppLocalizationsDelegate

@@ -11,6 +11,8 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.text('Inbox'), findsOneWidget);
+    expect(find.text('Inbox is empty'), findsOneWidget);
+    expect(find.text('收件箱是空的'), findsNothing);
   });
 
   testWidgets('通过更多菜单切换到中文', (tester) async {
