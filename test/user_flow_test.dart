@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:verb_app/core/services/task_service.dart';
-import 'package:verb_app/core/models/models.dart';
 import 'package:verb_app/core/storage/inmemory_repository.dart';
 import 'package:verb_app/l10n/generated/app_localizations.dart';
 import 'package:verb_app/app.dart';
-import 'package:verb_app/ui/home_page.dart';
 import 'package:verb_app/ui/pages/recycle_bin_page.dart';
 
 // 以真人视角：让测试像人一样操作主界面（录入→确认→显示、搜索、回收站彻底删除、主题、LLM 字段）。
@@ -138,7 +136,7 @@ void main() {
 // 回收站页面的最小外壳（与 localizedApp 一致，避免重复 import 页面内部导航）
 class RecycleBinPageShell extends StatelessWidget {
   final TaskService service;
-  const RecycleBinPageShell(this.service);
+  const RecycleBinPageShell(this.service, {super.key});
   @override
   Widget build(BuildContext context) {
     return RecycleBinPage(service: service);

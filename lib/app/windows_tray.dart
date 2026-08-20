@@ -14,37 +14,57 @@ class _Tray extends TrayListener {
   }
 }
 
-/// Windows 托盘常驻：点关闭→后台，托盘菜单 显示/退出。仅 Windows，异常兜底不崩溃。
-class WindowsTray {
-  static bool _done = false;
-
-  static Future<void> init() async {
-    if (_done || !Platform.isWindows) return;
-    _done = true;
-    try {
-      await windowManager.ensureInitialized();
-      await windowManager.setPreventClose(true);
-      windowManager.addListener(_CloseToTray());
-      // 启动时把窗口显示并拉回前台，避免“双击后看起来没反应”。
-      await windowManager.show();
-      await windowManager.focus();
-      await windowManager.setTitle('Verb Task');
-      final tray = TrayManager.instance;
-      tray.addListener(_Tray());
-      await tray.setContextMenu(Menu(items: [
-        MenuItem(key: 'show', label: '显示'),
-        MenuItem(key: 'quit', label: '退出'),
-      ]));
-    } catch (_) {
-      // 平台能力不可用时静默降级
+class _CloseToTray extends WindowListener {
+  @override
+  void onWindowClose() async {
+    if (WindowsTray.enabled) {
+      await windowManager.hide();
     }
   }
 }
 
-/// 关闭窗口时隐藏到托盘（真正退出走托盘菜单）。
-class _CloseToTray extends WindowListener {
-  @override
-  void onWindowClose() async {
-    await windowManager.hide();
+/// Windows 托盘常驻：读取 trayEnabled。启用→建托盘+关闭隐藏后台；
+/// 关闭→销毁托盘+允许直接退出。异常兜底。
+class WindowsTray {
+  static bool _enabled = false;
+  static bool _initialized = false;
+  static WindowListener closeListener = _CloseToTray();
+
+  static Future<void> init({required bool enabled}) async {
+    if (!Platform.isWindows) return;
+    try {
+      await windowManager.ensureInitialized();
+      final tray = TrayManager.instance;
+      tray.addListener(_Tray());
+      if (!_initialized) {
+        windowManager.addListener(closeListener);
+        _initialized = true;
+      }
+      await apply(enabled);
+    } catch (_) {}
   }
+
+  /// 切换托盘是否启用（创建/销毁托盘 + 是否拦截关闭）。
+  static Future<void> apply(bool enabled) async {
+    if (!Platform.isWindows) return;
+    _enabled = enabled;
+    try {
+      await windowManager.setPreventClose(enabled);
+      final tray = TrayManager.instance;
+      await windowManager.setTitle('Verb Task');
+      if (enabled) {
+        await windowManager.show();
+        await windowManager.focus();
+        await tray.setContextMenu(Menu(items: [
+          MenuItem(key: 'show', label: '显示'),
+          MenuItem(key: 'quit', label: '退出'),
+        ]));
+      } else {
+        await tray.destroy();
+      }
+    } catch (_) {}
+  }
+
+  static bool get enabled => _enabled;
 }
+

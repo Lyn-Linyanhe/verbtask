@@ -40,10 +40,11 @@ Future<void> main() async {
   ));
   unawaited(BackgroundSync.init().catchError((_) {}));
   if (Platform.isWindows) {
-    WindowsTray.init();
+    WindowsTray.init(enabled: settings.trayEnabled);
     WindowControl.setAlwaysOnTop(settings.alwaysOnTop);
     SyncHost.start(repo, token: settings.syncToken)
         .then((_) {}, onError: (_) {});
   }
 }
+
 

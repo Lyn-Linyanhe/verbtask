@@ -4,6 +4,8 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/nlp/llm_client.dart';
 import '../../app/window_control.dart';
+import '../../app/windows_tray.dart';
+import '../../app/autostart.dart';
 
 class SettingsPage extends StatefulWidget {
   final SettingsController controller;
@@ -320,14 +322,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: Text(l.keepInTray),
                   value: c.trayEnabled,
                   activeThumbColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (v) => setState(() => c.trayEnabled = v)),
+                  onChanged: (v) { setState(() => c.trayEnabled = v); WindowsTray.apply(v); }),
               const Divider(height: 1),
               SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(l.launchAtStartup),
                   value: c.autostartEnabled,
                   activeThumbColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (v) => setState(() => c.autostartEnabled = v)),
+                  onChanged: (v) { setState(() => c.autostartEnabled = v); Autostart.setEnabled(v); }),
               const Divider(height: 1),
               SwitchListTile(
                   contentPadding: EdgeInsets.zero,
@@ -383,6 +385,7 @@ class _NumberField extends StatelessWidget {
       onChanged: onChanged,
       decoration: InputDecoration(labelText: label));
 }
+
 
 
 

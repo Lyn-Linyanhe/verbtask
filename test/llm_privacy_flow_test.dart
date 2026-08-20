@@ -4,8 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:verb_app/core/settings/local_settings.dart';
 import 'package:verb_app/core/settings/settings_controller.dart';
 import 'package:verb_app/core/storage/inmemory_repository.dart';
-import 'package:verb_app/core/services/task_service.dart';
-import 'package:verb_app/l10n/generated/app_localizations.dart';
 import 'package:verb_app/app.dart';
 
 void main() {
@@ -53,3 +51,5 @@ void main() {
     expect(tasks.any((t) => t.title.contains('交报告')), isTrue);
   });
 }
+
+

@@ -4,7 +4,6 @@ import 'package:verb_app/core/models/models.dart';
 import 'package:verb_app/core/services/task_service.dart';
 import 'package:verb_app/core/storage/inmemory_repository.dart';
 import 'package:verb_app/core/notifications/reminder_scheduler.dart';
-import 'package:verb_app/core/rrule/rrule_service.dart';
 import 'package:verb_app/core/settings/local_settings.dart';
 
 void main() {
@@ -62,3 +61,4 @@ void main() {
     expect(s2.llmModel, 'deepseek-chat');
   });
 }
+
