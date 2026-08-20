@@ -49,6 +49,9 @@ class LocalSettings {
   bool get autostartEnabled => (_m['autostartEnabled'] as bool?) ?? true;
   set autostartEnabled(bool v) => _m['autostartEnabled'] = v;
 
+  String get syncToken => (_m['syncToken'] as String?) ?? '';
+  set syncToken(String v) => _m['syncToken'] = v;
+
   Future<void> save() async {
     await file.parent.create(recursive: true);
     await file.writeAsString(jsonEncode(_m));

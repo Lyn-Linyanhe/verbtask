@@ -19,11 +19,13 @@ Future<void> main() async {
     LocalSettings(await AppPaths.settingsFile()),
     repo,
   );
+  final syncToken = settings.ensureSyncToken();
   runApp(VerbApp(
     repository: repo,
     settings: settings,
     onQuickSync: () => SyncController.quickSync(
       repo,
+      token: syncToken,
       onSynced: () => AppNotifications.rescheduleAll(
         repo,
         defaultOffsetMinutes: settings.defaultReminderOffsetMinutes,
@@ -38,6 +40,7 @@ Future<void> main() async {
   unawaited(BackgroundSync.init().catchError((_) {}));
   if (Platform.isWindows) {
     WindowsTray.init();
-    SyncHost.start(repo).then((_) {}, onError: (_) {});
+    SyncHost.start(repo, token: settings.syncToken)
+        .then((_) {}, onError: (_) {});
   }
 }

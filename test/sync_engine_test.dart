@@ -32,7 +32,8 @@ void main() {
     final local = InMemoryRepository();
     await local.upsertTask(mk('local-only', 1));
     final engine = SyncEngine(local);
-    final res = await engine.mergeRemote(remoteTasks: const [], seenChangeIds: const []);
+    final res = await engine
+        .mergeRemote(remoteTasks: const [], seenChangeIds: const []);
     expect(res.toPush.map((t) => t.id), contains('local-only'));
   });
 
@@ -51,7 +52,8 @@ void main() {
     await local.upsertTask(mk('a', 1, title: '原'));
     final engine = SyncEngine(local);
     final del = mk('a', 2, deleted: true);
-    final res = await engine.mergeRemote(remoteTasks: [del], seenChangeIds: const []);
+    final res =
+        await engine.mergeRemote(remoteTasks: [del], seenChangeIds: const []);
     final merged = res.merged.firstWhere((t) => t.id == 'a');
     expect(merged.deleted, isTrue);
   });

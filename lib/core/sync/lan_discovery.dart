@@ -18,8 +18,10 @@ class LanDiscovery {
 
   /// Windows 端：在 [controlPort] 上应答“谁在”探针，返回自身 HTTP 端口。
   /// 返回 socket，调用方负责 close。
-  static Future<RawDatagramSocket> startResponder({required int httpPort}) async {
-    final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, controlPort);
+  static Future<RawDatagramSocket> startResponder(
+      {required int httpPort}) async {
+    final socket =
+        await RawDatagramSocket.bind(InternetAddress.anyIPv4, controlPort);
     socket.listen((event) {
       if (event != RawSocketEvent.read) return;
       final dg = socket.receive();
@@ -42,7 +44,9 @@ class LanDiscovery {
     final peers = <LanPeer>[];
     final done = Completer<void>();
     final probe = utf8.encode(_probe);
-    final timer = Timer(timeout, () { if (!done.isCompleted) done.complete(); });
+    final timer = Timer(timeout, () {
+      if (!done.isCompleted) done.complete();
+    });
 
     socket.listen((event) {
       if (!done.isCompleted && event == RawSocketEvent.read) {
@@ -51,7 +55,9 @@ class LanDiscovery {
           final msg = utf8.decode(dg.data, allowMalformed: true);
           if (msg.startsWith('VERB:')) {
             final port = int.tryParse(msg.substring('VERB:'.length).trim());
-            if (port != null && !peers.any((p) => p.httpPort == port && p.host == dg.address.address)) {
+            if (port != null &&
+                !peers.any((p) =>
+                    p.httpPort == port && p.host == dg.address.address)) {
               peers.add(LanPeer(dg.address.address, port));
             }
           }
@@ -61,10 +67,14 @@ class LanDiscovery {
       }
     });
 
-    try { socket.send(probe, InternetAddress('255.255.255.255'), controlPort); } catch (_) {}
+    try {
+      socket.send(probe, InternetAddress('255.255.255.255'), controlPort);
+    } catch (_) {}
     if (targets != null) {
       for (final t in targets) {
-        try { socket.send(probe, t, controlPort); } catch (_) {}
+        try {
+          socket.send(probe, t, controlPort);
+        } catch (_) {}
       }
     }
 
@@ -74,4 +84,3 @@ class LanDiscovery {
     return peers;
   }
 }
-

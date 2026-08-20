@@ -8,11 +8,11 @@ class SyncHost {
   final SyncServer _server;
   final RawDatagramSocket _responder;
   final int httpPort;
-  SyncHost._(this._server, this._responder)
-      : httpPort = _server.port;
+  SyncHost._(this._server, this._responder) : httpPort = _server.port;
 
-  static Future<SyncHost> start(TaskRepository repo) async {
-    final server = SyncServer(repo);
+  static Future<SyncHost> start(TaskRepository repo,
+      {String token = ''}) async {
+    final server = SyncServer(repo, token: token);
     await server.start(); // 绑定任意空闲端口
     final responder = await LanDiscovery.startResponder(httpPort: server.port);
     return SyncHost._(server, responder);

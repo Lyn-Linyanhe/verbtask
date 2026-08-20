@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../settings/local_settings.dart';
 import '../storage/repository.dart';
@@ -104,6 +105,29 @@ class SettingsController extends ChangeNotifier {
   }
 
   /// 等待此前由 setter 触发的设置写入完成。
+  String get syncToken => settings.syncToken;
+  set syncToken(String v) {
+    settings.syncToken = v;
+    _save();
+  }
+
+  /// 返回持久化的同步令牌；为空则生成一个并保存。
+  String ensureSyncToken() {
+    var t = settings.syncToken;
+    if (t.isEmpty) {
+      t = _randomToken();
+      settings.syncToken = t;
+      _save();
+    }
+    return t;
+  }
+
+  String _randomToken() {
+    final rnd = Random.secure();
+    return List.generate(
+        32, (_) => rnd.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
+  }
+
   Future<void> flush() => _pendingSave;
 
   void _save() {

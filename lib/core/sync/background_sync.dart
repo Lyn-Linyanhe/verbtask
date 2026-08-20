@@ -13,7 +13,9 @@ void backgroundCallbackDispatcher() {
     try {
       final repo = FileRepository(await AppPaths.dataFile());
       final settings = LocalSettings(await AppPaths.settingsFile());
+      final syncToken = settings.syncToken;
       await SyncController.quickSync(
+        token: syncToken,
         repo,
         onSynced: () => AppNotifications.rescheduleAll(
           repo,

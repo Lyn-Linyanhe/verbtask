@@ -9,12 +9,13 @@ class SyncController {
     TaskRepository localRepo, {
     Future<List<LanPeer>> Function()? discover,
     Future<void> Function()? onSynced,
+    String token = '',
   }) async {
     final peers = await (discover ?? LanDiscovery.discover)();
     var ran = 0;
     for (final peer in peers) {
       try {
-        final client = SyncClient(peer.uri);
+        final client = SyncClient(peer.uri, token: token);
         final engine = SyncEngine(localRepo);
         await runSync(client, engine);
         ran++;
