@@ -92,17 +92,30 @@ void main() {
 
   testWidgets('看板显示三种状态列', (tester) async {
     final service = TaskService(InMemoryRepository());
-    await service.create(title: '待做', status: TaskStatus.todo);
+    final task = await service.create(title: '待做', status: TaskStatus.todo);
     await service.create(title: '处理中任务', status: TaskStatus.doing);
     await service.create(title: '完成', status: TaskStatus.done);
+    var changed = false;
 
-    await tester.pumpWidget(localizedApp(BoardPage(service: service)));
+    await tester.pumpWidget(localizedApp(BoardPage(
+      service: service,
+      onTaskChanged: () async => changed = true,
+    )));
     await tester.pumpAndSettle();
 
     expect(find.text('未开始'), findsOneWidget);
     expect(find.text('进行中'), findsOneWidget);
     expect(find.text('已完成'), findsOneWidget);
     expect(find.text('待做'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.more_vert_rounded).first);
+    await tester.pumpAndSettle();
+    final doingItems = find.text('进行中');
+    await tester.tap(doingItems.last);
+    await tester.pumpAndSettle();
+    expect((await service.query()).firstWhere((t) => t.id == task.id).status,
+        TaskStatus.doing);
+    expect(changed, isTrue);
   });
 
   testWidgets('搜索使用独立输入框，不打开自然语言确认弹窗', (tester) async {

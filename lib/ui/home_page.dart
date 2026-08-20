@@ -211,7 +211,9 @@ class _HomePageState extends State<HomePage> {
   Future<void> _openBoard() async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => BoardPage(service: _tasks)),
+      MaterialPageRoute(
+          builder: (_) =>
+              BoardPage(service: _tasks, onTaskChanged: _reschedule)),
     );
     await _reload();
   }

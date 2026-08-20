@@ -5,7 +5,12 @@ import '../../l10n/generated/app_localizations.dart';
 
 class BoardPage extends StatefulWidget {
   final TaskService service;
-  const BoardPage({super.key, required this.service});
+  final Future<void> Function()? onTaskChanged;
+  const BoardPage({
+    super.key,
+    required this.service,
+    this.onTaskChanged,
+  });
 
   @override
   State<BoardPage> createState() => _BoardPageState();
@@ -33,6 +38,7 @@ class _BoardPageState extends State<BoardPage> {
   Future<void> _move(Task task, TaskStatus status) async {
     if (task.status == status) return;
     await widget.service.edit(task, status: status);
+    await widget.onTaskChanged?.call();
     await _reload();
   }
 
