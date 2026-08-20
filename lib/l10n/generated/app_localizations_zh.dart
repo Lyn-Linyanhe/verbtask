@@ -345,6 +345,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get importBackup => '导入恢复';
 
   @override
+  String get exportCsv => '导出 CSV';
+
+  @override
+  String get importCsv => '导入 CSV';
+
+  @override
+  String get csvExported => '已导出 CSV 备份';
+
+  @override
   String get windowsSystem => 'Windows 系统';
 
   @override

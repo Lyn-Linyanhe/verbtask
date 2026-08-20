@@ -728,6 +728,24 @@ abstract class AppLocalizations {
   /// **'Import backup'**
   String get importBackup;
 
+  /// No description provided for @exportCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'Export CSV'**
+  String get exportCsv;
+
+  /// No description provided for @importCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'Import CSV'**
+  String get importCsv;
+
+  /// No description provided for @csvExported.
+  ///
+  /// In en, this message translates to:
+  /// **'CSV backup exported'**
+  String get csvExported;
+
   /// No description provided for @windowsSystem.
   ///
   /// In en, this message translates to:

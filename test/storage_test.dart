@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:verb_app/core/models/models.dart';
 import 'package:verb_app/core/storage/backup_service.dart';
@@ -164,5 +165,56 @@ void main() {
     final all = await repo2.allTasks();
     expect(all.single.id, 'x');
     expect(all.single.title, '写周报');
+  });
+
+  test('CSV 导出/导入 round-trip', () async {
+    final repo = FileRepository(File('${dir.path}/c1.json'));
+    final repo2 = FileRepository(File('${dir.path}/c2.json'));
+    final svc = TaskService(repo);
+    final list = await svc.createList(name: '工作');
+    await svc.create(
+      title: '写周报,含逗号"引号"\n换行',
+      notes: '备注',
+      listId: list.id,
+      due: DueDate(DateTime.utc(2026, 8, 25, 10)),
+      priority: 3,
+    );
+    final csv = await BackupService(repo).exportCsv();
+
+    final imp = BackupService(repo2);
+    final n = await imp.importCsv(csv);
+    expect(n, 1);
+    final t = (await repo2.allTasks()).single;
+    expect(t.title, '写周报,含逗号"引号"\n换行');
+    expect(t.notes, '备注');
+    expect(t.due?.value.toUtc(), DateTime.utc(2026, 8, 25, 10));
+    expect(t.due?.dateOnly, isFalse);
+    expect(t.priority, 3);
+    expect(t.listId, list.id);
+  });
+
+  test('导入不支持版本的 JSON 时不改动已有数据', () async {
+    final f = File('${dir.path}/v.json');
+    final repo = FileRepository(f);
+    await repo.upsertTask(Task(
+      id: 'keep',
+      title: '保留',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 2),
+    ));
+    final before = await f.readAsString();
+    final bad = jsonEncode({
+      'format': 'verb-app',
+      'version': 999,
+      'tasks': <Object>[],
+      'lists': <Object>[],
+    });
+
+    await expectLater(
+      BackupService(repo).importJson(bad),
+      throwsA(isA<FormatException>()),
+    );
+    expect(await f.readAsString(), before);
+    expect((await repo.allTasks()).single.id, 'keep');
   });
 }

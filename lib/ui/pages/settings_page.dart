@@ -7,6 +7,7 @@ class SettingsPage extends StatefulWidget {
   final SettingsController controller;
   final ValueChanged<Locale> onLocaleChanged;
   final File? backupFile;
+  final File? csvFile;
   final VoidCallback? onQuickSync;
   final ValueChanged<ThemeMode>? onThemeModeChanged;
   final ThemeMode themeMode;
@@ -15,6 +16,7 @@ class SettingsPage extends StatefulWidget {
       required this.controller,
       required this.onLocaleChanged,
       this.backupFile,
+      this.csvFile,
       this.onQuickSync,
       this.onThemeModeChanged,
       this.themeMode = ThemeMode.system});
@@ -78,6 +80,24 @@ class _SettingsPageState extends State<SettingsPage> {
       return;
     }
     final n = await widget.controller.importFrom(f);
+    _snack(l.importedTasks(n));
+  }
+
+  Future<void> _exportCsv() async {
+    final l = AppLocalizations.of(context);
+    final f = widget.csvFile ?? File('verb_backup.csv');
+    await widget.controller.exportCsvTo(f);
+    _snack(l.csvExported);
+  }
+
+  Future<void> _importCsv() async {
+    final l = AppLocalizations.of(context);
+    final f = widget.csvFile ?? File('verb_backup.csv');
+    if (!f.existsSync()) {
+      _snack(l.backupFileMissing);
+      return;
+    }
+    final n = await widget.controller.importCsvFrom(f);
     _snack(l.importedTasks(n));
   }
 
@@ -194,6 +214,20 @@ class _SettingsPageState extends State<SettingsPage> {
                         onPressed: _import,
                         icon: const Icon(Icons.download_rounded),
                         label: Text(l.importBackup))),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(
+                    child: OutlinedButton.icon(
+                        onPressed: _exportCsv,
+                        icon: const Icon(Icons.table_chart_rounded),
+                        label: Text(l.exportCsv))),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: OutlinedButton.icon(
+                        onPressed: _importCsv,
+                        icon: const Icon(Icons.table_chart_outlined),
+                        label: Text(l.importCsv))),
               ]),
               const SizedBox(height: 10),
               SizedBox(

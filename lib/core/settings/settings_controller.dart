@@ -92,6 +92,17 @@ class SettingsController extends ChangeNotifier {
     return backup.importJson(json);
   }
 
+  Future<void> exportCsvTo(File f) async {
+    final csv = await backup.exportCsv();
+    await f.parent.create(recursive: true);
+    await f.writeAsString(csv);
+  }
+
+  Future<int> importCsvFrom(File f) async {
+    final csv = await f.readAsString();
+    return backup.importCsv(csv);
+  }
+
   /// 等待此前由 setter 触发的设置写入完成。
   Future<void> flush() => _pendingSave;
 

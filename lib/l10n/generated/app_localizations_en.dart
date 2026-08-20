@@ -350,6 +350,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importBackup => 'Import backup';
 
   @override
+  String get exportCsv => 'Export CSV';
+
+  @override
+  String get importCsv => 'Import CSV';
+
+  @override
+  String get csvExported => 'CSV backup exported';
+
+  @override
   String get windowsSystem => 'Windows system';
 
   @override
