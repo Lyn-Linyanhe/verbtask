@@ -102,7 +102,7 @@ class ZhParser {
     // 移除日期 token（仅当不在"每"周期里）
     final dateTokens = ['后天','明天','明日','今天','今日','现在'];
     for (final t in dateTokens) { if (text.contains(t)) text = text.replaceAll(t, ' '); }
-    text = text.replaceAll(RegExp(r'(?:下|本|这|那)?(?:周|星期|礼拜)[一二三四五六日天]?'), ' ');
+    text = text.replaceAll(RegExp(r'(?:下|本|这|那)(?:周|星期|礼拜)[一二三四五六日天]?|(?:周|星期|礼拜)[一二三四五六日天](?!报)'), ' ');
     text = text.replaceAll(RegExp(r'\d{1,2}月\d{1,2}[号日]'), ' ');
     text = text.replaceAll(RegExp(r'\d+号'), ' ');
     text = text.replaceAll(RegExp(r'\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?'), ' ');
@@ -187,6 +187,7 @@ class ZhParser {
     return base;
   }
 }
+
 
 
 
