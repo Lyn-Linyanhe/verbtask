@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -19,7 +20,8 @@ class LlmConfig {
 /// 未配置 / 调用失败。
 class LlmUnavailable implements Exception {
   final String message;
-  LlmUnavailable(this.message);
+  final int? statusCode; // HTTP 状态码；null 表示非 HTTP 失败（如超时/网络错误）
+  LlmUnavailable(this.message, {this.statusCode});
   @override
   String toString() => 'LlmUnavailable: $message';
 }
@@ -52,13 +54,41 @@ class LlmClient {
     return IOClient(io);
   }
 
+  /// 带重试的增强解析。偶发失败（超时/网络/5xx/429/网关返回 HTML 等）自动重试一次；
+  /// 确定性失败（401/403/404 等配置性错误）立即抛出，避免无谓等待。
   Future<LlmDraft?> enhance(String text, LlmConfig cfg) async {
-    // 端点自动探测：先试常用 /chat/completions；若服务端返回非 JSON（网关 HTML 等），
-    // 再试 /v1/chat/completions（很多中转站/代理的正确路径），避免静默回退本地解析。
-    // 今天日期作为相对时间基准（关键：防止 LLM 把"明天/下周一/月底"解析成过去的任意日期）。
     final now = DateTime.now();
     final todayStr =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    Object? last;
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await _enhanceOnce(text, cfg, todayStr);
+      } catch (e) {
+        last = e;
+        if (!_shouldRetry(e)) rethrow;
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+      }
+    }
+    if (last is Exception) throw last;
+    throw LlmUnavailable('解析失败');
+  }
+
+  /// 是否值得重试：任何非 LlmUnavailable 的异常（超时/网络/连接等）一律重试一次；
+  /// LlmUnavailable 仅在 200(网关HTML)/429/5xx 或未知状态时重试；4xx 鉴权/路径类不重试。
+  static bool _shouldRetry(Object e) {
+    if (e is LlmUnavailable) {
+      final s = e.statusCode;
+      if (s == null) return true;
+      return s == 200 || s >= 500 || s == 429;
+    }
+    return true;
+  }
+
+  Future<LlmDraft?> _enhanceOnce(String text, LlmConfig cfg, String todayStr) async {
+    // 端点自动探测：先试常用 /chat/completions；若服务端返回非 JSON（网关 HTML 等），
+    // 再试 /v1/chat/completions（很多中转站/代理的正确路径），避免静默回退本地解析。
+    // 今天日期作为相对时间基准（关键：防止 LLM 把"明天/下周一/月底"解析成过去的任意日期）。
     Map<String, dynamic> data = const {};
     int lastStatus = 0;
     String lastBody = '';
@@ -102,7 +132,8 @@ class LlmClient {
     }
     if (!data.containsKey('choices')) {
       throw LlmUnavailable(
-          '响应非 JSON/失败 (HTTP $lastStatus; 响应="$lastBody")');
+          '响应非 JSON/失败 (HTTP $lastStatus; 响应="$lastBody")',
+          statusCode: lastStatus);
     }
     final choices = (data['choices'] as List?) ?? const [];
     final content = choices.isEmpty
@@ -130,7 +161,7 @@ class LlmClient {
 
 规则：
 1. title=去掉时间/日期/频率/语气词后的行动短语："明天下午3点前把周报交给我，这个很重要啊"→"交周报"；剔除"提醒我/记得/别迟到/很重要/每天/每周/上午/下午/几点"等冗余词。
-2. due 输出本地墙钟时间（不要带 Z 或时区偏移）。提到具体时刻（如"下午3点""早上十点"）→ dateOnly=false；只提到日期（如"下周一""月底前"）→ dateOnly=true；完全没时间信息 → due=null 且 dateOnly=true。
+2. due 输出本地墙钟时间（不要带 Z 或时区偏移）。提到具体时刻（如"下午3点""早上十点"）→ dateOnly=false；只提到日期（如"下周一""月底前"）→ dateOnly=true。若文本隐含合理默认期限，也应给出 due 而非 null："这个月/本月做X"→当月最后一天(dateOnly=true)；"睡前/临睡前做X"→今晚23:00；"下班后做X"→当天18:00；"周末做X"→最近的周末日期。完全没有时间概念的事务（如"买瓶酱油"）才给 due=null。
 3. 重复任务 rrule 用不带 RRULE: 前缀的 FREQ=...（如 FREQ=WEEKLY;BYDAY=MO、FREQ=MONTHLY;BYMONTHDAY=28、FREQ=DAILY;INTERVAL=14）。若重复的每次发生在固定时刻（如"每天下午六点""每周一上午九点"），必须把时刻写进 BYHOUR/BYMINUTE/BYSECOND（如 FREQ=DAILY;BYHOUR=18;BYMINUTE=0;BYSECOND=0），绝对不要丢失时刻。若明确首次时间（如"下周二下午两点开始"）则 due 填该次绝对时间；否则 due=null。
 4. priority：0=未强调/默认，1=低，2=中（提到"重要"），3=高或紧急。''';
 
@@ -146,6 +177,9 @@ class LlmClient {
     }
     t = t.trim();
     if (t.startsWith('RRULE:')) t = t.substring('RRULE:'.length);
+    // 非标准扩展频率别名 → 标准 RRULE（rrule 包只认 SECONDLY..YEARLY，避免展开静默失败）
+    t = t.replaceFirst('FREQ=BIWEEKLY', 'FREQ=WEEKLY;INTERVAL=2');
+    t = t.replaceFirst('FREQ=BIMONTHLY', 'FREQ=MONTHLY;INTERVAL=2');
     return t.isEmpty ? null : t;
   }
 

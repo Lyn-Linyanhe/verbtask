@@ -94,6 +94,25 @@ void main() {
     expect(r.source, 'local');
     expect(r.fallbackFromLlm, isTrue);
   });
+
+  test('enhance: 非标准 BIWEEKLY 归一化为 WEEKLY;INTERVAL=2（防 rrule 展开静默失败）', () async {
+    final mock = MockClient((req) async => http.Response.bytes(
+          utf8.encode(jsonEncode({
+            'choices': [
+              {
+                'message': {
+                  'content':
+                      '{"title":"体检","due":null,"dateOnly":false,"rrule":"FREQ=BIWEEKLY;BYDAY=TU;BYHOUR=14;BYMINUTE=0","priority":1}'
+                }
+              }
+            ]
+          })),
+          200,
+          headers: {'content-type': 'application/json'},
+        ));
+    final d = await LlmClient(client: mock).enhance('两周体检', cfg);
+    expect(d!.rrule, 'FREQ=WEEKLY;INTERVAL=2;BYDAY=TU;BYHOUR=14;BYMINUTE=0');
+  });
 }
 
 class _FakeLlm extends LlmClient {
