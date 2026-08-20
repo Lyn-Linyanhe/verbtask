@@ -48,6 +48,8 @@ class LocalSettings {
 
   bool get autostartEnabled => (_m['autostartEnabled'] as bool?) ?? true;
   set autostartEnabled(bool v) => _m['autostartEnabled'] = v;
+  bool get alwaysOnTop => (_m['alwaysOnTop'] as bool?) ?? false;
+  set alwaysOnTop(bool v) => _m['alwaysOnTop'] = v;
 
   String get syncToken => (_m['syncToken'] as String?) ?? '';
   set syncToken(String v) => _m['syncToken'] = v;
@@ -57,3 +59,4 @@ class LocalSettings {
     await file.writeAsString(jsonEncode(_m));
   }
 }
+

@@ -12,6 +12,8 @@ import 'pages/list_manage_page.dart';
 import 'pages/task_edit_page.dart';
 import 'pages/recycle_bin_page.dart';
 import 'pages/settings_page.dart';
+import 'pages/quick_note_page.dart';
+import '../app/window_control.dart';
 
 enum ViewFilter { inbox, today, planned, list, done, board }
 
@@ -290,6 +292,25 @@ class _HomePageState extends State<HomePage> {
     await _reschedule();
   }
 
+  /// 打开悬浮速记小窗：窗口缩成小窗并置顶，回车连记，返回恢复窗口。
+  Future<void> _openQuickNote() async {
+    await WindowControl.enterMini();
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QuickNotePage(
+          onAdd: _quickAdd,
+          restoreAlwaysOnTop: widget.settings?.alwaysOnTop ?? false,
+        ),
+      ),
+    );
+    if (mounted) {
+      await WindowControl.exitMini(
+          restoreAlwaysOnTop: widget.settings?.alwaysOnTop ?? false);
+    }
+  }
+
   void _onMenu(String value) {
     switch (value) {
       case 'settings':
@@ -331,6 +352,7 @@ class _HomePageState extends State<HomePage> {
               title: l.appTitle,
               l: l,
               onQuickSync: widget.onQuickSync,
+              onQuickNote: _openQuickNote,
               onRecycle: _openBin,
               onMenu: _onMenu,
               hasSettings: widget.settings != null,
@@ -462,6 +484,7 @@ class _AppHeader extends StatelessWidget {
   final AppLocalizations l;
   final VoidCallback? onQuickSync;
   final VoidCallback onRecycle;
+  final VoidCallback? onQuickNote;
   final ValueChanged<String> onMenu;
   final bool hasSettings;
 
@@ -470,6 +493,7 @@ class _AppHeader extends StatelessWidget {
     required this.l,
     this.onQuickSync,
     required this.onRecycle,
+    this.onQuickNote,
     required this.onMenu,
     required this.hasSettings,
   });
@@ -489,6 +513,10 @@ class _AppHeader extends StatelessWidget {
                   ?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
+          IconButton(
+              tooltip: l.quickNote,
+              onPressed: onQuickNote,
+              icon: const Icon(Icons.sticky_note_2_outlined)),
           IconButton(
               tooltip: l.quickSync,
               onPressed: onQuickSync,
@@ -834,3 +862,7 @@ class _DueChip extends StatelessWidget {
             TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color));
   }
 }
+
+
+
+

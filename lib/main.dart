@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'app/windows_tray.dart';
+import 'app/window_control.dart';
 import 'core/sync/background_sync.dart';
 import 'core/sync/sync_controller.dart';
 import 'core/sync/sync_host.dart';
@@ -40,7 +41,9 @@ Future<void> main() async {
   unawaited(BackgroundSync.init().catchError((_) {}));
   if (Platform.isWindows) {
     WindowsTray.init();
+    WindowControl.setAlwaysOnTop(settings.alwaysOnTop);
     SyncHost.start(repo, token: settings.syncToken)
         .then((_) {}, onError: (_) {});
   }
 }
+

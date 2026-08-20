@@ -385,4 +385,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deletePermanently => '彻底删除';
+
+  @override
+  String get alwaysOnTop => '窗口置顶';
+
+  @override
+  String get quickNote => '悬浮速记';
+
+  @override
+  String get quickNoteHint => '输入任务，回车保存…';
+
+  @override
+  String get restoreWindow => '恢复正常窗口';
+
+  @override
+  String get exitQuickNote => '退出速记';
 }

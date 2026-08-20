@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/settings/settings_controller.dart';
+import '../../app/window_control.dart';
 
 class SettingsPage extends StatefulWidget {
   final SettingsController controller;
@@ -270,6 +271,16 @@ class _SettingsPageState extends State<SettingsPage> {
                   value: c.autostartEnabled,
                   activeThumbColor: Theme.of(context).colorScheme.primary,
                   onChanged: (v) => setState(() => c.autostartEnabled = v)),
+              const Divider(height: 1),
+              SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l.alwaysOnTop),
+                  value: c.alwaysOnTop,
+                  activeThumbColor: Theme.of(context).colorScheme.primary,
+                  onChanged: (v) {
+                    setState(() => c.alwaysOnTop = v);
+                    WindowControl.setAlwaysOnTop(v);
+                  }),
             ])),
         const SizedBox(height: 20),
       ]),
@@ -315,3 +326,4 @@ class _NumberField extends StatelessWidget {
       onChanged: onChanged,
       decoration: InputDecoration(labelText: label));
 }
+

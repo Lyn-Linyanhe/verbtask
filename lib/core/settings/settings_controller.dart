@@ -81,6 +81,12 @@ class SettingsController extends ChangeNotifier {
     _save();
   }
 
+  bool get alwaysOnTop => settings.alwaysOnTop;
+  set alwaysOnTop(bool v) {
+    settings.alwaysOnTop = v;
+    _save();
+  }
+
   Future<String> exportTo(File f) async {
     final json = await backup.exportJson();
     await f.parent.create(recursive: true);
@@ -135,3 +141,4 @@ class SettingsController extends ChangeNotifier {
     notifyListeners();
   }
 }
+

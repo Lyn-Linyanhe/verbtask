@@ -119,4 +119,10 @@
   "emptyRecycleBinSubtitle": "Deleted tasks appear here and can be restored",
   "restore": "Restore",
   "deletePermanently": "Delete permanently"
+  ,
+  "alwaysOnTop": "Always on top",
+  "quickNote": "Quick note",
+  "quickNoteHint": "Type a task, press Enter to save…",
+  "restoreWindow": "Restore window",
+  "exitQuickNote": "Exit quick note"
 }

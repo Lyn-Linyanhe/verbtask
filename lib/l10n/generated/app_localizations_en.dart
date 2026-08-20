@@ -391,4 +391,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deletePermanently => 'Delete permanently';
+
+  @override
+  String get alwaysOnTop => 'Always on top';
+
+  @override
+  String get quickNote => 'Quick note';
+
+  @override
+  String get quickNoteHint => 'Type a task, press Enter to save…';
+
+  @override
+  String get restoreWindow => 'Restore window';
+
+  @override
+  String get exitQuickNote => 'Exit quick note';
 }

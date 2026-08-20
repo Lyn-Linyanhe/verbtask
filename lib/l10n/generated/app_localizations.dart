@@ -811,6 +811,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete permanently'**
   String get deletePermanently;
+
+  /// No description provided for @alwaysOnTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Always on top'**
+  String get alwaysOnTop;
+
+  /// No description provided for @quickNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick note'**
+  String get quickNote;
+
+  /// No description provided for @quickNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a task, press Enter to save…'**
+  String get quickNoteHint;
+
+  /// No description provided for @restoreWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore window'**
+  String get restoreWindow;
+
+  /// No description provided for @exitQuickNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit quick note'**
+  String get exitQuickNote;
 }
 
 class _AppLocalizationsDelegate
