@@ -9,11 +9,18 @@ class NlpResult {
   final int? priority;
   final bool needsConfirm;
   final String source;
+  final bool fallbackFromLlm;
   const NlpResult({
-    this.title, this.due, this.rrule, this.priority,
-    this.needsConfirm = true, this.source = 'local',
+    this.title,
+    this.due,
+    this.rrule,
+    this.priority,
+    this.needsConfirm = true,
+    this.source = 'local',
+    this.fallbackFromLlm = false,
   });
-  bool get isEmpty => title == null && due == null && rrule == null && priority == null;
+  bool get isEmpty =>
+      title == null && due == null && rrule == null && priority == null;
 }
 
 /// 三级解析：本地规则(zh) -> 可选 LLM -> 手动兜底。
@@ -22,7 +29,7 @@ class NlpService {
   final LlmClient? llm;
   NlpService({ZhParser? zh, this.llm}) : _zh = zh ?? ZhParser();
 
-  NlpResult parseLocal(String text) {
+  NlpResult parseLocal(String text, {bool fallbackFromLlm = false}) {
     final d = _zh.parse(text);
     return NlpResult(
       title: d.title.isEmpty ? null : d.title,
@@ -31,6 +38,7 @@ class NlpService {
       priority: d.priority,
       needsConfirm: true,
       source: 'local',
+      fallbackFromLlm: fallbackFromLlm,
     );
   }
 
@@ -42,7 +50,7 @@ class NlpService {
           return NlpResult(
             title: d.title,
             due: d.dueIso != null
-                ? DueDate(DateTime.parse(d.dueIso!).toUtc(), dateOnly: false)
+                ? _dueFromLlm(d.dueIso!, d.dateOnly ?? false)
                 : null,
             rrule: d.rrule,
             priority: d.priority,
@@ -54,7 +62,17 @@ class NlpService {
         // fall through to local
       }
     }
-    return parseLocal(text);
+    return parseLocal(text, fallbackFromLlm: llm != null && config != null);
+  }
+
+  DueDate _dueFromLlm(String iso, bool dateOnly) {
+    final parsed = DateTime.parse(iso);
+    if (dateOnly) {
+      return DueDate(
+        DateTime.utc(parsed.year, parsed.month, parsed.day),
+        dateOnly: true,
+      );
+    }
+    return DueDate(parsed.toUtc());
   }
 }
-

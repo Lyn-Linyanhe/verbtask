@@ -10,21 +10,26 @@ void main() {
   test('解析 LLM 返回 JSON', () async {
     final mock = MockClient((req) async {
       expect(req.headers['Authorization'], 'Bearer k');
-      return http.Response(jsonEncode({
-        'choices': [
-          {
-            'message': {
-              'content': '{"title":"写周报","due":"2026-08-25T10:00:00Z","rrule":null,"priority":2}'
-            }
-          }
-        ]
-      }), 200, headers: {'content-type': 'application/json'});
+      return http.Response(
+          jsonEncode({
+            'choices': [
+              {
+                'message': {
+                  'content':
+                      '{"title":"写周报","due":"2026-08-25T10:00:00Z","dateOnly":true,"rrule":null,"priority":2}'
+                }
+              }
+            ]
+          }),
+          200,
+          headers: {'content-type': 'application/json'});
     });
     final client = LlmClient(client: mock);
     final d = await client.enhance('写周报', cfg);
     expect(d, isNotNull);
     expect(d!.title, '写周报');
     expect(d.dueIso, '2026-08-25T10:00:00Z');
+    expect(d.dateOnly, isTrue);
     expect(d.priority, 2);
   });
 
@@ -34,4 +39,3 @@ void main() {
     expect(() => client.enhance('x', cfg), throwsA(isA<LlmUnavailable>()));
   });
 }
-

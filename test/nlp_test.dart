@@ -1,5 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:verb_app/core/nlp/zh_parser.dart';
+import 'package:verb_app/core/nlp/llm_client.dart';
+import 'package:verb_app/core/nlp/nlp_service.dart';
 
 void main() {
   final p = ZhParser();
@@ -36,5 +41,42 @@ void main() {
     final d = p.parse('每个工作日打卡');
     expect(d.rrule, 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR');
   });
-}
 
+  test('LLM 解析保留仅日期语义', () async {
+    final client = LlmClient(
+        client: MockClient((_) async => http.Response.bytes(
+              utf8.encode(jsonEncode({
+                'choices': [
+                  {
+                    'message': {
+                      'content':
+                          '{"title":"交报告","due":"2026-08-25","dateOnly":true}'
+                    }
+                  }
+                ]
+              })),
+              200,
+            )));
+    final result = await NlpService(llm: client).parse(
+      '下周二交报告',
+      config: const LlmConfig(baseUrl: 'https://example.com/v1', apiKey: 'k'),
+    );
+
+    expect(result.source, 'llm');
+    expect(result.due?.dateOnly, isTrue);
+    expect(result.due?.value, DateTime.utc(2026, 8, 25));
+  });
+
+  test('LLM 失败回退到本地解析并标记回退', () async {
+    final client =
+        LlmClient(client: MockClient((_) async => http.Response('error', 500)));
+    final result = await NlpService(llm: client).parse(
+      '明天交报告',
+      config: const LlmConfig(baseUrl: 'https://example.com/v1', apiKey: 'k'),
+    );
+
+    expect(result.source, 'local');
+    expect(result.fallbackFromLlm, isTrue);
+    expect(result.title, '交报告');
+  });
+}

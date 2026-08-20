@@ -114,6 +114,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String parseList(Object value) {
+    return 'List: $value';
+  }
+
+  @override
+  String parseReminder(Object value) {
+    return 'Reminder: $value';
+  }
+
+  @override
+  String parsePriority(Object value) {
+    return 'Priority: $value';
+  }
+
+  @override
+  String parseSource(Object value) {
+    return 'Parser: $value';
+  }
+
+  @override
   String get unrecognized => 'Unrecognized';
 
   @override
@@ -182,6 +202,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hasDueDate => 'Has due date';
 
   @override
+  String get dueDate => 'Due date';
+
+  @override
+  String get dateOnly => 'Date only';
+
+  @override
+  String get dateAndTime => 'Date + time';
+
+  @override
+  String get setDueDate => 'Set due date';
+
+  @override
+  String get clearDueDate => 'Clear due date';
+
+  @override
+  String get reminder => 'Reminder';
+
+  @override
+  String get reminderEnabled => 'Remind me for this task';
+
+  @override
+  String get reminderAdvanceMinutes => 'Minutes in advance';
+
+  @override
+  String get noReminder => 'No reminder';
+
+  @override
+  String get priority => 'Priority';
+
+  @override
+  String get priorityNone => 'No priority';
+
+  @override
+  String get priorityLow => 'Low';
+
+  @override
+  String get priorityMedium => 'Medium';
+
+  @override
+  String get priorityHigh => 'High';
+
+  @override
+  String get parseLocal => 'Offline local';
+
+  @override
+  String get parseLlm => 'LLM';
+
+  @override
   String get editTask => 'Edit task';
 
   @override
@@ -243,6 +311,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get llmOfflineParsingDescription =>
       'Off by default; offline parsing is always available';
+
+  @override
+  String get llmDataNoticeTitle =>
+      'Task text will be sent to an external service';
+
+  @override
+  String get llmDataNoticeBody =>
+      'LLM-enhanced parsing is enabled. After you confirm, the current text will be sent to the OpenAI-compatible endpoint you entered. VerbTask does not receive the data.';
+
+  @override
+  String get llmFallbackNotice =>
+      'LLM unavailable; fell back to offline parsing';
 
   @override
   String get baseUrlLabel => 'Base URL (OpenAI-compatible)';

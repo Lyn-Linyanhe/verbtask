@@ -3,6 +3,7 @@ import '../l10n/generated/app_localizations.dart';
 import '../core/models/models.dart';
 import '../core/services/task_service.dart';
 import '../core/nlp/nlp_service.dart';
+import '../core/nlp/llm_client.dart';
 import '../core/storage/repository.dart';
 import '../core/settings/settings_controller.dart';
 import '../core/notifications/app_notifications.dart';
@@ -39,7 +40,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late TaskService _tasks;
-  final NlpService _nlp = NlpService();
+  final NlpService _nlp = NlpService(llm: LlmClient());
   final TextEditingController _input = TextEditingController();
   final TextEditingController _search = TextEditingController();
   List<Task> _items = const [];
@@ -73,6 +74,7 @@ class _HomePageState extends State<HomePage> {
     final token = ++_reloadToken;
     final view = _view;
     final lists = await _tasks.allLists();
+    if (!mounted) return;
     lists.sort((a, b) {
       final byOrder = a.sortOrder.compareTo(b.sortOrder);
       return byOrder == 0 ? a.name.compareTo(b.name) : byOrder;
@@ -142,8 +144,32 @@ class _HomePageState extends State<HomePage> {
   Future<void> _quickAdd(String text) async {
     final value = text.trim();
     if (value.isEmpty) return;
-    final r = _nlp.parseLocal(value);
     final l = AppLocalizations.of(context);
+
+    var config = _llmConfig();
+    if (config != null) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(AppLocalizations.of(ctx).llmDataNoticeTitle),
+          content: Text(AppLocalizations.of(ctx).llmDataNoticeBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(AppLocalizations.of(ctx).cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(AppLocalizations.of(ctx).confirm),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) config = null;
+    }
+
+    final r = await _nlp.parse(value, config: config);
+    if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -151,7 +177,12 @@ class _HomePageState extends State<HomePage> {
         content: Text(
           '${l.parseTitle(r.title ?? l.unrecognized)}\n'
           '${l.parseDue(r.due?.value.toLocal() ?? l.none)}\n'
-          '${l.parseRepeat(r.rrule ?? l.none)}',
+          '${l.parseRepeat(r.rrule ?? l.none)}\n'
+          '${l.parseList(l.inbox)}\n'
+          '${l.parseReminder(r.due == null ? l.noReminder : l.reminder)}\n'
+          '${l.parsePriority(_priorityName(r.priority, l))}\n'
+          '${l.parseSource(r.source == 'llm' ? l.parseLlm : l.parseLocal)}'
+          '${r.fallbackFromLlm ? '\n${l.llmFallbackNotice}' : ''}',
         ),
         actions: [
           TextButton(
@@ -180,6 +211,22 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  LlmConfig? _llmConfig() {
+    final s = widget.settings;
+    if (s == null || s.llmEnabled != 1) return null;
+    final base = s.llmBaseUrl.trim();
+    final key = s.llmKey.trim();
+    if (base.isEmpty || key.isEmpty) return null;
+    return LlmConfig(baseUrl: base, apiKey: key);
+  }
+
+  String _priorityName(int? priority, AppLocalizations l) => switch (priority) {
+        1 => l.priorityLow,
+        2 => l.priorityMedium,
+        3 => l.priorityHigh,
+        _ => l.priorityNone,
+      };
+
   Future<void> _openBin() async {
     await Navigator.push(
       context,
@@ -189,10 +236,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _openEdit(Task task) async {
+    final lists = await _tasks.allLists();
+    if (!mounted) return;
+    lists.sort((a, b) {
+      final byOrder = a.sortOrder.compareTo(b.sortOrder);
+      return byOrder == 0 ? a.name.compareTo(b.name) : byOrder;
+    });
     final changed = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-          builder: (_) => TaskEditPage(task: task, service: _tasks)),
+          builder: (_) =>
+              TaskEditPage(task: task, service: _tasks, lists: lists)),
     );
     if (changed == true) {
       await _reschedule();

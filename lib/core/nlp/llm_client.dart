@@ -20,9 +20,16 @@ class LlmUnavailable implements Exception {
 class LlmDraft {
   final String? title;
   final String? dueIso; // ISO 8601；null=不限
+  final bool? dateOnly;
   final String? rrule;
   final int? priority;
-  const LlmDraft({this.title, this.dueIso, this.rrule, this.priority});
+  const LlmDraft({
+    this.title,
+    this.dueIso,
+    this.dateOnly,
+    this.rrule,
+    this.priority,
+  });
 }
 
 /// 可选 LLM 增强解析客户端（OpenAI 兼容 chat/completions）。
@@ -43,8 +50,7 @@ class LlmClient {
             'messages': [
               {
                 'role': 'system',
-                'content':
-                    '你是任务解析助手。把用户的中文任务文本解析成 JSON，只输出 JSON：'
+                'content': '你是任务解析助手。把用户的中文任务文本解析成 JSON，只输出 JSON：'
                     '{"title":"任务标题","due":"ISO8601 或 null","dateOnly":true|false,"rrule":"RRULE 或 null","priority":0|1|2|3}。'
                     '不输出任何其他文字。',
               },
@@ -61,13 +67,15 @@ class LlmClient {
     final choices = (data['choices'] as List?) ?? const [];
     final content = choices.isEmpty
         ? null
-        : (choices.first as Map<String, dynamic>)['message']?['content'] as String?;
+        : (choices.first as Map<String, dynamic>)['message']?['content']
+            as String?;
     if (content == null || content.trim().isEmpty) return null;
     final map = _extractFirstJson(content);
     if (map == null) return null;
     return LlmDraft(
       title: map['title'] as String?,
       dueIso: map['due'] as String?,
+      dateOnly: map['dateOnly'] as bool?,
       rrule: map['rrule'] as String?,
       priority: (map['priority'] as num?)?.toInt(),
     );
@@ -85,11 +93,10 @@ class LlmClient {
     final end = content.lastIndexOf('}');
     if (start < 0 || end <= start) return null;
     try {
-      return jsonDecode(content.substring(start, end + 1)) as Map<String, dynamic>;
+      return jsonDecode(content.substring(start, end + 1))
+          as Map<String, dynamic>;
     } catch (_) {
       return null;
     }
   }
 }
-
-

@@ -114,6 +114,26 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String parseList(Object value) {
+    return '清单：$value';
+  }
+
+  @override
+  String parseReminder(Object value) {
+    return '提醒：$value';
+  }
+
+  @override
+  String parsePriority(Object value) {
+    return '优先级：$value';
+  }
+
+  @override
+  String parseSource(Object value) {
+    return '解析方式：$value';
+  }
+
+  @override
   String get unrecognized => '未识别';
 
   @override
@@ -182,6 +202,54 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hasDueDate => '有期限';
 
   @override
+  String get dueDate => '截止日期';
+
+  @override
+  String get dateOnly => '仅日期';
+
+  @override
+  String get dateAndTime => '日期 + 时刻';
+
+  @override
+  String get setDueDate => '设置截止日期';
+
+  @override
+  String get clearDueDate => '清除截止日期';
+
+  @override
+  String get reminder => '提醒';
+
+  @override
+  String get reminderEnabled => '为此任务提醒';
+
+  @override
+  String get reminderAdvanceMinutes => '提前分钟数';
+
+  @override
+  String get noReminder => '不提醒';
+
+  @override
+  String get priority => '优先级';
+
+  @override
+  String get priorityNone => '无优先级';
+
+  @override
+  String get priorityLow => '低';
+
+  @override
+  String get priorityMedium => '中';
+
+  @override
+  String get priorityHigh => '高';
+
+  @override
+  String get parseLocal => '本地离线';
+
+  @override
+  String get parseLlm => 'LLM';
+
+  @override
   String get editTask => '编辑任务';
 
   @override
@@ -241,6 +309,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get llmOfflineParsingDescription => '默认关闭；本地离线解析始终可用';
+
+  @override
+  String get llmDataNoticeTitle => '任务文本将发送到外部服务';
+
+  @override
+  String get llmDataNoticeBody =>
+      '你已开启 LLM 增强解析。确认后，当前文本会发送到你填写的 OpenAI 兼容接口。数据不会发送到 VerbTask 自己的服务器。';
+
+  @override
+  String get llmFallbackNotice => 'LLM 不可用，已回退到本地解析';
 
   @override
   String get baseUrlLabel => 'Base URL（OpenAI 兼容）';

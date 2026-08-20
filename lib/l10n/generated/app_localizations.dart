@@ -296,6 +296,30 @@ abstract class AppLocalizations {
   /// **'Repeat: {value}'**
   String parseRepeat(Object value);
 
+  /// No description provided for @parseList.
+  ///
+  /// In en, this message translates to:
+  /// **'List: {value}'**
+  String parseList(Object value);
+
+  /// No description provided for @parseReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder: {value}'**
+  String parseReminder(Object value);
+
+  /// No description provided for @parsePriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority: {value}'**
+  String parsePriority(Object value);
+
+  /// No description provided for @parseSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Parser: {value}'**
+  String parseSource(Object value);
+
   /// No description provided for @unrecognized.
   ///
   /// In en, this message translates to:
@@ -428,6 +452,102 @@ abstract class AppLocalizations {
   /// **'Has due date'**
   String get hasDueDate;
 
+  /// No description provided for @dueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get dueDate;
+
+  /// No description provided for @dateOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Date only'**
+  String get dateOnly;
+
+  /// No description provided for @dateAndTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Date + time'**
+  String get dateAndTime;
+
+  /// No description provided for @setDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Set due date'**
+  String get setDueDate;
+
+  /// No description provided for @clearDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear due date'**
+  String get clearDueDate;
+
+  /// No description provided for @reminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get reminder;
+
+  /// No description provided for @reminderEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me for this task'**
+  String get reminderEnabled;
+
+  /// No description provided for @reminderAdvanceMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Minutes in advance'**
+  String get reminderAdvanceMinutes;
+
+  /// No description provided for @noReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'No reminder'**
+  String get noReminder;
+
+  /// No description provided for @priority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get priority;
+
+  /// No description provided for @priorityNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No priority'**
+  String get priorityNone;
+
+  /// No description provided for @priorityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get priorityLow;
+
+  /// No description provided for @priorityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get priorityMedium;
+
+  /// No description provided for @priorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get priorityHigh;
+
+  /// No description provided for @parseLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline local'**
+  String get parseLocal;
+
+  /// No description provided for @parseLlm.
+  ///
+  /// In en, this message translates to:
+  /// **'LLM'**
+  String get parseLlm;
+
   /// No description provided for @editTask.
   ///
   /// In en, this message translates to:
@@ -541,6 +661,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Off by default; offline parsing is always available'**
   String get llmOfflineParsingDescription;
+
+  /// No description provided for @llmDataNoticeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Task text will be sent to an external service'**
+  String get llmDataNoticeTitle;
+
+  /// No description provided for @llmDataNoticeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'LLM-enhanced parsing is enabled. After you confirm, the current text will be sent to the OpenAI-compatible endpoint you entered. VerbTask does not receive the data.'**
+  String get llmDataNoticeBody;
+
+  /// No description provided for @llmFallbackNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'LLM unavailable; fell back to offline parsing'**
+  String get llmFallbackNotice;
 
   /// No description provided for @baseUrlLabel.
   ///

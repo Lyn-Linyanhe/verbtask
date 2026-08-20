@@ -21,6 +21,10 @@ Widget localizedApp(Widget home, {Locale locale = const Locale('zh')}) {
 
 void main() {
   testWidgets('编辑页修改标题后保存', (tester) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final repo = InMemoryRepository();
     final svc = TaskService(repo);
     final t = await svc.create(title: '旧标题');
@@ -157,5 +161,49 @@ void main() {
 
     expect(find.text('工作'), findsOneWidget);
     expect(find.text('工作任务'), findsOneWidget);
+  });
+
+  testWidgets('编辑页保存日期模式、提醒、优先级和清单', (tester) async {
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repo = InMemoryRepository();
+    final service = TaskService(repo);
+    final list = await service.createList(name: '工作');
+    final task = await service.create(
+      title: '编辑目标',
+      due: DueDate(DateTime.utc(2026, 8, 25, 10)),
+    );
+
+    await tester.pumpWidget(localizedApp(TaskEditPage(
+      task: task,
+      service: service,
+      lists: [list],
+    )));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('task-date-only')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('task-reminder-enabled')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const ValueKey('task-reminder-offset')), '60');
+    await tester.tap(find.byKey(const ValueKey('task-priority')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('高').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('task-list')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('工作').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+
+    final updated = (await repo.allTasks()).single;
+    expect(updated.due?.dateOnly, isTrue);
+    expect(updated.reminders.single.offsetMinutes, -60);
+    expect(updated.priority, 3);
+    expect(updated.listId, list.id);
   });
 }
