@@ -1,7 +1,7 @@
 ; VerbTask Windows 安装器
 ; 所有路径均为相对本脚本目录(installer/)解析，保证克隆后可移植编译
 #define MyAppName "VerbTask"
-#define MyAppVersion "0.3.0"
+#define MyAppVersion "0.4.0"
 #define MyAppPublisher "VerbTask contributors"
 #define MyAppExeName "verb_app.exe"
 
@@ -44,3 +44,4 @@ Name: "{autodesktop}\VerbTask"; Filename: "{app}\{#MyAppExeName}"; Tasks: deskto
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
+
