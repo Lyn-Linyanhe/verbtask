@@ -15,11 +15,25 @@ class AppNotifications {
   }) async {
     if (!Platform.isAndroid && !Platform.isWindows) return;
     try {
-      _sink = await PlatformNotificationSink.create();
+      _sink = await PlatformNotificationSink.create(requestPermission: false);
     } catch (_) {
       _sink = null;
     }
     await rescheduleAll(repo, defaultOffsetMinutes: defaultOffsetMinutes);
+  }
+
+  /// 用户主动开启提醒时请求通知权限（Android 13+）；其余平台 no-op。
+  static Future<void> ensureNotificationPermission() async {
+    if (!Platform.isAndroid) return;
+    try {
+      var s = _sink;
+      if (s == null) {
+        s = await PlatformNotificationSink.create(requestPermission: true);
+        _sink = s;
+      } else if (s is PlatformNotificationSink) {
+        await s.requestPermission();
+      }
+    } catch (_) {}
   }
 
   static Future<void> rescheduleAll(

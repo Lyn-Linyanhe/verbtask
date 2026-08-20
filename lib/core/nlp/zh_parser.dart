@@ -9,12 +9,14 @@ class ZhDraft {
   final bool dateOnly;
   final String? rrule; // RRULE
   final int? priority; // 1=低 2=中 3=高
+  final int? reminderMinutes; // 到期前 N 分钟提醒；null=不提醒
   const ZhDraft({
     required this.title,
     this.due,
     this.dateOnly = true,
     this.rrule,
     this.priority,
+    this.reminderMinutes,
   });
 }
 
@@ -161,6 +163,34 @@ class ZhParser {
     // 无具体时刻的纯时间段词（上午/晚上/凌晨等）也要从标题剥离
     text = text.replaceAll(RegExp(r'上午|下午|晚上|傍晚|凌晨|中午|白天|夜晚'), ' ');
 
+    // ---- 提醒 ----
+    int? reminderMinutes;
+    String reminderToken = '';
+    for (final (pat, mul) in <(RegExp, int)>[
+      (RegExp(r'提前\s*(\d+)\s*分钟'), 1),
+      (RegExp(r'提前\s*(\d+)\s*个?\s*小时'), 60),
+      (RegExp(r'提前\s*(\d+)\s*天'), 1440),
+    ]) {
+      final m = pat.firstMatch(text);
+      if (m != null) {
+        reminderMinutes = int.parse(m.group(1)!) * mul;
+        reminderToken = m.group(0)!;
+        break;
+      }
+    }
+    if (reminderMinutes == null) {
+      final half = RegExp(r'提前\s*半\s*个?\s*小时').firstMatch(text);
+      if (half != null) {
+        reminderMinutes = 30;
+        reminderToken = half.group(0)!;
+      }
+    }
+    if (reminderToken.isNotEmpty) text = text.replaceFirst(reminderToken, ' ');
+    if (reminderMinutes == null && text.contains('提醒')) {
+      reminderMinutes = 15; // 只说"提醒"未给提前量 → 默认提前15分钟
+    }
+    text = text.replaceAll(RegExp(r'提醒\s*我|记得提醒|提醒'), ' ');
+
     // ---- 优先级 ----
     int? priority;
     if (RegExp(r'紧急|p1|!{2,}').hasMatch(text.toLowerCase())) { priority = 3; }
@@ -177,6 +207,7 @@ class ZhParser {
       dateOnly: dateOnly,
       rrule: rrule,
       priority: priority,
+      reminderMinutes: reminderMinutes,
     );
   }
 

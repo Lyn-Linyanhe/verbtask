@@ -878,6 +878,18 @@ abstract class AppLocalizations {
   /// **'Restore window'**
   String get restoreWindow;
 
+  /// No description provided for @remindBeforeMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} minutes before'**
+  String remindBeforeMinutes(int minutes);
+
+  /// No description provided for @remindAtDue.
+  ///
+  /// In en, this message translates to:
+  /// **'at due time'**
+  String get remindAtDue;
+
   /// No description provided for @exitQuickNote.
   ///
   /// In en, this message translates to:

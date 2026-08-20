@@ -172,6 +172,18 @@ class _HomePageState extends State<HomePage> {
 
     final r = await _nlp.parse(value, config: config);
     if (!mounted) return;
+    // 提醒：显式解析结果优先；否则开了全局默认提醒且任务有截止时，套用默认提前量
+    int? reminderMin = r.reminderMinutes;
+    if (reminderMin == null &&
+        r.due != null &&
+        (widget.settings?.notifyDefaultReminderEnabled ?? false)) {
+      reminderMin = (widget.settings?.notifyDefaultOffsetMin ?? -15).abs();
+    }
+    final reminderLabel = reminderMin == null
+        ? l.noReminder
+        : (reminderMin == 0
+            ? l.remindAtDue
+            : l.remindBeforeMinutes(reminderMin));
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -181,7 +193,7 @@ class _HomePageState extends State<HomePage> {
           '${l.parseDue(r.due?.value.toLocal() ?? l.none)}\n'
           '${l.parseRepeat(r.rrule ?? l.none)}\n'
           '${l.parseList(l.inbox)}\n'
-          '${l.parseReminder(r.due == null ? l.noReminder : l.reminder)}\n'
+          '${l.parseReminder(reminderLabel)}\n'
           '${l.parsePriority(_priorityName(r.priority, l))}\n'
           '${l.parseSource(r.source == 'llm' ? l.parseLlm : l.parseLocal)}'
           '${r.fallbackFromLlm ? '\n${l.llmFallbackNotice}' : ''}',
@@ -201,11 +213,23 @@ class _HomePageState extends State<HomePage> {
       ),
     );
     if (confirmed == true) {
+      final reminders = reminderMin == null
+          ? const <Reminder>[]
+          : [
+              Reminder(
+                id: 'rem-${DateTime.now().microsecondsSinceEpoch}',
+                offsetMinutes: reminderMin == 0 ? 0 : -reminderMin,
+              )
+            ];
+      if (reminders.isNotEmpty) {
+        await AppNotifications.ensureNotificationPermission();
+      }
       await _tasks.create(
         title: r.title ?? value,
         due: r.due,
         rrule: r.rrule,
         priority: r.priority ?? 0,
+        reminders: reminders,
       );
       await _reschedule();
       _input.clear();
@@ -378,7 +402,9 @@ class _HomePageState extends State<HomePage> {
                 },
                 decoration: InputDecoration(
                   hintText: l.searchTasks,
-                  prefixIcon: const Icon(Icons.search_rounded),
+                  isDense: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
                   suffixIcon: _search.text.isEmpty
                       ? null
                       : IconButton(
@@ -769,8 +795,8 @@ class _TaskCard extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                  width: 4,
-                  height: 4,
+                  width: 6,
+                  height: 6,
                   decoration: BoxDecoration(
                       color: _statusColor(scheme), shape: BoxShape.circle)),
               const SizedBox(width: 12),
@@ -807,6 +833,23 @@ class _TaskCard extends StatelessWidget {
                                 : scheme.onSurface,
                             decoration:
                                 done ? TextDecoration.lineThrough : null)),
+                    if (task.status == TaskStatus.doing) ...[
+                      const SizedBox(height: 5),
+                      Container(
+                        key: const ValueKey('doing-badge'),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: scheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(l.doing,
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: scheme.onPrimaryContainer)),
+                      ),
+                    ],
                     if (task.due != null) ...[
                       const SizedBox(height: 5),
                       Row(children: [

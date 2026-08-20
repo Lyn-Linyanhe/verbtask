@@ -428,5 +428,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get restoreWindow => 'Restore window';
 
   @override
+  String remindBeforeMinutes(int minutes) {
+    return '$minutes minutes before';
+  }
+
+  @override
+  String get remindAtDue => 'at due time';
+
+  @override
   String get exitQuickNote => 'Exit quick note';
 }

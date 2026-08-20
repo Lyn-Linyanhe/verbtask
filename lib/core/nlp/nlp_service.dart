@@ -7,6 +7,7 @@ class NlpResult {
   final DueDate? due;
   final String? rrule;
   final int? priority;
+  final int? reminderMinutes; // 到期前 N 分钟提醒；null=不提醒
   final bool needsConfirm;
   final String source;
   final bool fallbackFromLlm;
@@ -15,6 +16,7 @@ class NlpResult {
     this.due,
     this.rrule,
     this.priority,
+    this.reminderMinutes,
     this.needsConfirm = true,
     this.source = 'local',
     this.fallbackFromLlm = false,
@@ -36,6 +38,7 @@ class NlpService {
       due: d.due != null ? DueDate(d.due!, dateOnly: d.dateOnly) : null,
       rrule: d.rrule,
       priority: d.priority,
+      reminderMinutes: d.reminderMinutes,
       needsConfirm: true,
       source: 'local',
       fallbackFromLlm: fallbackFromLlm,
@@ -55,6 +58,7 @@ class NlpService {
                 : null,
             rrule: d.rrule,
             priority: d.priority,
+            reminderMinutes: d.reminderMinutes,
             needsConfirm: true,
             source: 'llm',
           );

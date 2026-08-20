@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/settings/settings_controller.dart';
 import '../../core/nlp/llm_client.dart';
 import '../../app/window_control.dart';
+import '../../core/notifications/app_notifications.dart';
 import '../../app/windows_tray.dart';
 import '../../app/autostart.dart';
 
@@ -252,8 +254,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(l.useDefaultReminder),
                 value: c.notifyDefaultReminderEnabled,
-                onChanged: (v) =>
-                    setState(() => c.notifyDefaultReminderEnabled = v),
+                onChanged: (v) {
+                  setState(() => c.notifyDefaultReminderEnabled = v);
+                  if (v) {
+                    unawaited(AppNotifications.ensureNotificationPermission());
+                  }
+                },
               ),
               const SizedBox(height: 4),
               _NumberField(

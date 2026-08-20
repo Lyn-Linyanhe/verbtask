@@ -130,7 +130,10 @@
   "quickNote": "Quick note",
   "quickNoteHint": "Type a task, press Enter to save…",
   "restoreWindow": "Restore window",
-  "exitQuickNote": "Exit quick note"
+
+  "remindBeforeMinutes": "{minutes} minutes before",
+  "@remindBeforeMinutes": { "placeholders": { "minutes": { "type": "int" } } },
+  "remindAtDue": "at due time",  "exitQuickNote": "Exit quick note"
 }
 
 

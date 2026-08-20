@@ -203,7 +203,7 @@ class _BoardTask extends StatelessWidget {
                       maxLines: 2, overflow: TextOverflow.ellipsis),
                   if (task.due != null) ...[
                     const SizedBox(height: 5),
-                    Text(_formatDue(task.due!.value.toLocal()),
+                    Text(_fmtDue(task.due!.value.toLocal(), l),
                         style: TextStyle(
                             fontSize: 12, color: scheme.onSurfaceVariant)),
                   ],
@@ -237,7 +237,11 @@ class _BoardTask extends StatelessWidget {
   }
 }
 
-String _formatDue(DateTime value) {
-  final minute = value.minute.toString().padLeft(2, '0');
-  return '${value.month}/${value.day} ${value.hour}:$minute';
+String _fmtDue(DateTime value, AppLocalizations l) {
+  // 与首页一致：X月X日 HH:mm
+  final d = value;
+  final date = l.dateMonthDay(d.day, d.month);
+  final h = d.hour.toString().padLeft(2, '0');
+  final minute = d.minute.toString().padLeft(2, '0');
+  return '$date $h:$minute';
 }

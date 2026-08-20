@@ -9,7 +9,7 @@ class AppColors {
   static const primarySoft = Color(0xFFE9ECFF);
   static const accent = Color(0xFFC94A4A);
   static const text = Color(0xFF18202A);
-  static const muted = Color(0xFF667085);
+  static const muted = Color(0xFF4E5866); // 次要文字加深，正文级对比度≈4.5:1（WCAG AA）
   static const done = Color(0xFF2E946B);
   static const line = Color(0xFFE3E7EF);
 
@@ -19,7 +19,7 @@ class AppColors {
   static const darkPrimarySoft = Color(0xFF293052);
   static const darkAccent = Color(0xFFFF7E7E);
   static const darkText = Color(0xFFF1F3F7);
-  static const darkMuted = Color(0xFFA2ABBB);
+  static const darkMuted = Color(0xFFC2CBD9); // 深色次要文字提亮
   static const darkDone = Color(0xFF68C69B);
   static const darkLine = Color(0xFF303846);
 }

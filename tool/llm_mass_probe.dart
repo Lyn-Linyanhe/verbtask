@@ -66,7 +66,7 @@ void main(List<String> args) async {
       }
       final due = fmtDue(r);
       stdout.writeln(
-          '${c['id']} | ${r.source}${r.fallbackFromLlm ? "(回退)" : ""} | title=${r.title} | due=$due | rrule=${r.rrule ?? "-"} | pri=${r.priority ?? "-"}');
+          '${c['id']} | ${r.source}${r.fallbackFromLlm ? "(回退)" : ""} | title=${r.title} | due=$due | rrule=${r.rrule ?? "-"} | pri=${r.priority ?? "-"} | reminder=${r.reminderMinutes ?? "-"}');
       stdout.writeln('      input: $input');
     } catch (e) {
       err++;

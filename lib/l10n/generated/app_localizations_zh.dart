@@ -420,5 +420,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get restoreWindow => '恢复正常窗口';
 
   @override
+  String remindBeforeMinutes(int minutes) {
+    return '提前 $minutes 分钟';
+  }
+
+  @override
+  String get remindAtDue => '到期时';
+
+  @override
   String get exitQuickNote => '退出速记';
 }

@@ -1,0 +1,13 @@
+[{ "id": "R1", "input": "明天下午3点开会，提前10分钟提醒我", "expect": "due=明天15:00, reminder=10" },
+ { "id": "R2", "input": "每天早上8点提醒我喝水", "expect": "rrule=DAILY 8:00, reminder=15" },
+ { "id": "R3", "input": "周五晚上7点约小王吃饭", "expect": "reminder=null, due今晚19:00" },
+ { "id": "R4", "input": "周三下午交报告，提前半小时叫我", "expect": "reminder=30, 下周三" },
+ { "id": "R5", "input": "买瓶酱油", "expect": "reminder=null, rrule=null" },
+ { "id": "R6", "input": "每天下午六点下班打卡提醒", "expect": "rrule=DAILY 18:00, reminder=15" },
+ { "id": "R7", "input": "每月15号交房租", "expect": "rrule=MONTHLY 15, reminder=null" },
+ { "id": "R8", "input": "提醒我明天去体检", "expect": "due=明天, reminder=15" },
+ { "id": "R9", "input": "每周末下午3点提醒我浇花", "expect": "rrule=WEEKLY SA,SU 15:00, reminder=15" },
+ { "id": "R10", "input": "两周做一次体检", "expect": "rrule=WEEKLY INTERVAL=2, reminder=null" },
+ { "id": "R11", "input": "下周二下午两点开会，提前1小时通知大家", "expect": "due=下周二14:00, reminder=60" },
+ { "id": "R12", "input": "月底前交房租，记得提前提醒我", "expect": "due=月末, reminder=15" }
+]

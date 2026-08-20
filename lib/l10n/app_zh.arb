@@ -130,7 +130,10 @@
   "quickNote": "悬浮速记",
   "quickNoteHint": "输入任务，回车保存…",
   "restoreWindow": "恢复正常窗口",
-  "exitQuickNote": "退出速记"
+
+  "remindBeforeMinutes": "提前 {minutes} 分钟",
+  "@remindBeforeMinutes": { "placeholders": { "minutes": { "type": "int" } } },
+  "remindAtDue": "到期时",  "exitQuickNote": "退出速记"
 }
 
 

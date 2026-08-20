@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/models/models.dart';
 import '../../core/services/task_service.dart';
+import '../../core/notifications/app_notifications.dart';
 
 class TaskEditPage extends StatefulWidget {
   final Task task;
@@ -131,6 +132,9 @@ class _TaskEditPageState extends State<TaskEditPage> {
     final title = _title.text.trim();
     if (title.isEmpty) return;
     final rr = _rrule.text.trim();
+    if (_reminderEnabled) {
+      await AppNotifications.ensureNotificationPermission();
+    }
     await widget.service.edit(
       widget.task,
       title: title,

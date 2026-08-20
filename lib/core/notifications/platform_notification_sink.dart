@@ -31,6 +31,14 @@ class PlatformNotificationSink implements NotificationSink {
     return PlatformNotificationSink._(plugin);
   }
 
+  /// Android 上请求通知运行时权限（Android 13+）；其余平台 no-op。
+  Future<void> requestPermission() async {
+    if (!Platform.isAndroid) return;
+    final android = _plugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    await android?.requestNotificationsPermission();
+  }
+
   @override
   Future<void> schedule({
     required String id,
