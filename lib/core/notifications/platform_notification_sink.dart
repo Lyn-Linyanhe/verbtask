@@ -11,6 +11,7 @@ class PlatformNotificationSink implements NotificationSink {
 
   static Future<PlatformNotificationSink> create({
     bool requestPermission = true,
+    void Function(String? taskId)? onTaskTap,
   }) async {
     tzdata.initializeTimeZones();
     final plugin = FlutterLocalNotificationsPlugin();
@@ -22,7 +23,19 @@ class PlatformNotificationSink implements NotificationSink {
         guid: 'a2c0d1e2-3f44-4b55-8c66-9d77e0f1a2b3',
       ),
     );
-    await plugin.initialize(init);
+    await plugin.initialize(init,
+        onDidReceiveNotificationResponse: (resp) {
+      onTaskTap?.call(resp.payload);
+    });
+    if (Platform.isAndroid) {
+      try {
+        final launch = await plugin.getNotificationAppLaunchDetails();
+        if (launch?.didNotificationLaunchApp ?? false) {
+          final p = launch?.notificationResponse?.payload;
+          if (p != null) onTaskTap?.call(p);
+        }
+      } catch (_) {}
+    }
     if (requestPermission && Platform.isAndroid) {
       final android = plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
@@ -64,6 +77,7 @@ class PlatformNotificationSink implements NotificationSink {
       tzAt,
       details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: id,
     );
   }
 

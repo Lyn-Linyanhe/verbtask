@@ -12,10 +12,12 @@ class AppNotifications {
   static Future<void> init(
     TaskRepository repo, {
     int? defaultOffsetMinutes,
+    void Function(String? taskId)? onNotificationTap,
   }) async {
     if (!Platform.isAndroid && !Platform.isWindows) return;
     try {
-      _sink = await PlatformNotificationSink.create(requestPermission: false);
+      _sink = await PlatformNotificationSink.create(
+          requestPermission: false, onTaskTap: onNotificationTap);
     } catch (_) {
       _sink = null;
     }

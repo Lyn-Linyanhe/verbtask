@@ -7,6 +7,7 @@ import 'core/storage/repository.dart';
 import 'core/settings/local_settings.dart';
 import 'core/settings/settings_controller.dart';
 import 'ui/home_page.dart';
+import 'app/navigation.dart';
 
 class VerbApp extends StatefulWidget {
   final TaskRepository? repository;
@@ -48,6 +49,7 @@ class _VerbAppState extends State<VerbApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Verb Task',
+      navigatorKey: appNavigatorKey,
       locale: _locale,
       supportedLocales: const [Locale('en'), Locale('zh')],
       localizationsDelegates: AppLocalizations.localizationsDelegates,

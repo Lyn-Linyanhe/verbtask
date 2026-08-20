@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart';
 import 'app/windows_tray.dart';
 import 'app/window_control.dart';
+import 'app/navigation.dart';
+import 'app/open_task.dart';
 import 'core/sync/background_sync.dart';
 import 'core/sync/sync_controller.dart';
 import 'core/sync/sync_host.dart';
@@ -37,6 +40,13 @@ Future<void> main() async {
   unawaited(AppNotifications.init(
     repo,
     defaultOffsetMinutes: settings.defaultReminderOffsetMinutes,
+    onNotificationTap: (taskId) {
+      if (taskId == null) return;
+      if (Platform.isWindows) {
+        windowManager.show().then((_) => windowManager.focus());
+      }
+      openTaskById(repo, taskId, navigatorKey: appNavigatorKey);
+    },
   ));
   unawaited(BackgroundSync.init().catchError((_) {}));
   if (Platform.isWindows) {
