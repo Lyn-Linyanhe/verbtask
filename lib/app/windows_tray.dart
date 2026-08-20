@@ -14,7 +14,7 @@ class _Tray extends TrayListener {
   }
 }
 
-/// Windows 托盘常驻：点关闭→后台；托盘菜单 显示/退出。仅 Windows，异常兜底不崩溃。
+/// Windows 托盘常驻：点关闭→后台，托盘菜单 显示/退出。仅 Windows，异常兜底不崩溃。
 class WindowsTray {
   static bool _done = false;
 
@@ -24,6 +24,11 @@ class WindowsTray {
     try {
       await windowManager.ensureInitialized();
       await windowManager.setPreventClose(true);
+      windowManager.addListener(_CloseToTray());
+      // 启动时把窗口显示并拉回前台，避免“双击后看起来没反应”。
+      await windowManager.show();
+      await windowManager.focus();
+      await windowManager.setTitle('Verb Task');
       final tray = TrayManager.instance;
       tray.addListener(_Tray());
       await tray.setContextMenu(Menu(items: [
@@ -36,3 +41,10 @@ class WindowsTray {
   }
 }
 
+/// 关闭窗口时隐藏到托盘（真正退出走托盘菜单）。
+class _CloseToTray extends WindowListener {
+  @override
+  void onWindowClose() async {
+    await windowManager.hide();
+  }
+}
