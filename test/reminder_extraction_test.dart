@@ -64,6 +64,27 @@ void main() {
           config: const LlmConfig(baseUrl: 'https://x/v1', apiKey: 'k'));
       expect(r.reminderMinutes, 45);
     });
+    test('LLM 漏提“提醒”→安全网默认15分钟', () async {
+      final mock = MockClient((_) async => http.Response.bytes(
+            utf8.encode(jsonEncode({
+              'choices': [
+                {
+                  'message': {
+                    'content':
+                        '{"title":"喝水","due":"2026-08-22T00:00:00.000Z","dateOnly":true,"rrule":null,"priority":0}'
+                  }
+                }
+              ]
+            })),
+            200,
+            headers: {'content-type': 'application/json'},
+          ));
+      final svc = NlpService(llm: LlmClient(client: mock));
+      final r = await svc.parse('提醒我喝水',
+          config: const LlmConfig(baseUrl: 'https://x/v1', apiKey: 'k'));
+      expect(r.reminderMinutes, 15,
+          reason: 'LLM 未给提醒但文本含“提醒”时安全网兜底15分钟');
+    });
   });
 
   group('快速录入真实创建提醒', () {

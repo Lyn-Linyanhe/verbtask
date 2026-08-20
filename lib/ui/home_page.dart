@@ -477,7 +477,16 @@ class _HomePageState extends State<HomePage> {
             ),
             Expanded(
               child: _items.isEmpty
-                  ? _EmptyState(view: _view, l: l)
+                  ? (_search.text.trim().isNotEmpty
+                      ? _SearchEmpty(
+                          l: l,
+                          onClear: () {
+                            _search.clear();
+                            setState(() {});
+                            _reload();
+                          },
+                        )
+                      : _EmptyState(view: _view, l: l))
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       itemCount: _items.length,
@@ -698,6 +707,35 @@ class _QueryControls extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SearchEmpty extends StatelessWidget {
+  final AppLocalizations l;
+  final VoidCallback onClear;
+  const _SearchEmpty({required this.l, required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.search_off_rounded, size: 40, color: scheme.onSurfaceVariant),
+        const SizedBox(height: 12),
+        Text(l.searchNoResultTitle,
+            style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Text(l.searchNoResultSubtitle,
+            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
+        const SizedBox(height: 12),
+        TextButton.icon(
+          onPressed: onClear,
+          icon: const Icon(Icons.clear_rounded, size: 18),
+          label: Text(l.clearSearch),
+        ),
+      ]),
     );
   }
 }

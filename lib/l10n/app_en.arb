@@ -20,6 +20,8 @@
   "sortByCreated": "Sort by created time",
   "sortByTitle": "Sort by title",
   "clearSearch": "Clear search",
+  "searchNoResultSubtitle": "Try a different keyword or clear the search",
+  "searchNoResultTitle": "No matching tasks",
   "manageLists": "Manage lists",
   "newList": "New list",
   "editList": "Edit list",

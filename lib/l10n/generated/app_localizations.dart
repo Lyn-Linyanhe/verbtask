@@ -218,6 +218,18 @@ abstract class AppLocalizations {
   /// **'Clear search'**
   String get clearSearch;
 
+  /// No description provided for @searchNoResultSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different keyword or clear the search'**
+  String get searchNoResultSubtitle;
+
+  /// No description provided for @searchNoResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching tasks'**
+  String get searchNoResultTitle;
+
   /// No description provided for @manageLists.
   ///
   /// In en, this message translates to:

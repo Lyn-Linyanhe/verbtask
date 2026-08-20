@@ -1,0 +1,5 @@
+[{ "id": "C1", "input": "每天下午6点提醒我下班打卡 高优先级", "expect": "rrule=DAILY 18:00, reminder=15, pri=3" },
+ { "id": "C2", "input": "明天早上8点交报告，提前20分钟提醒我，重要", "expect": "due=明天08:00, reminder=20, pri=2" },
+ { "id": "C3", "input": "每两周日下午3点做一次拉伸，提前半小时提醒", "expect": "rrule=WEEKLY BYDAY=SU INTERVAL=2 15:00, reminder=30" },
+ { "id": "C4", "input": "月底前交房租 紧急 提前1天提醒", "expect": "due=月末仅日期, pri=3, reminder=1440" }
+]

@@ -69,6 +69,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get clearSearch => '清除搜索';
 
   @override
+  String get searchNoResultSubtitle => '试试更换关键词，或清除搜索看看全部';
+
+  @override
+  String get searchNoResultTitle => '未找到相关任务';
+
+  @override
   String get manageLists => '管理清单';
 
   @override

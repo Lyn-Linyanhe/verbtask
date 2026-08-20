@@ -69,6 +69,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clearSearch => 'Clear search';
 
   @override
+  String get searchNoResultSubtitle =>
+      'Try a different keyword or clear the search';
+
+  @override
+  String get searchNoResultTitle => 'No matching tasks';
+
+  @override
   String get manageLists => 'Manage lists';
 
   @override

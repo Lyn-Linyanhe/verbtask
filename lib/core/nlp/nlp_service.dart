@@ -58,7 +58,9 @@ class NlpService {
                 : null,
             rrule: d.rrule,
             priority: d.priority,
-            reminderMinutes: d.reminderMinutes,
+            // 安全网：LLM 漏提“提醒”时按本地语义默认 15 分钟（与 zh_parser 一致）
+            reminderMinutes:
+                d.reminderMinutes ?? (text.contains('提醒') ? 15 : null),
             needsConfirm: true,
             source: 'llm',
           );
