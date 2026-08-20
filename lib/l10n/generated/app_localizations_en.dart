@@ -406,6 +406,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deletePermanently => 'Delete permanently';
 
   @override
+  String get deletePermanentlyConfirmTitle => 'Delete permanently?';
+
+  @override
+  String get deletePermanentlyConfirmBody => 'This cannot be undone. Continue?';
+
+  @override
+  String get fillLlmConfigFirst =>
+      'Fill in Base URL and API Key first, then fetch models.';
+
+  @override
   String get alwaysOnTop => 'Always on top';
 
   @override

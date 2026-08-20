@@ -836,6 +836,24 @@ abstract class AppLocalizations {
   /// **'Delete permanently'**
   String get deletePermanently;
 
+  /// No description provided for @deletePermanentlyConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete permanently?'**
+  String get deletePermanentlyConfirmTitle;
+
+  /// No description provided for @deletePermanentlyConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone. Continue?'**
+  String get deletePermanentlyConfirmBody;
+
+  /// No description provided for @fillLlmConfigFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in Base URL and API Key first, then fetch models.'**
+  String get fillLlmConfigFirst;
+
   /// No description provided for @alwaysOnTop.
   ///
   /// In en, this message translates to:

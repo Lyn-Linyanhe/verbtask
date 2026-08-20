@@ -122,8 +122,10 @@
   "emptyRecycleBinTitle": "回收站是空的",
   "emptyRecycleBinSubtitle": "删除的任务会在这里，可恢复",
   "restore": "恢复",
-  "deletePermanently": "彻底删除"
-  ,
+  "deletePermanently": "彻底删除",
+  "deletePermanentlyConfirmTitle": "确认彻底删除",
+  "deletePermanentlyConfirmBody": "删除后无法恢复，确定要继续吗？",
+  "fillLlmConfigFirst": "请先填写 Base URL 和 API Key，再获取模型",
   "alwaysOnTop": "窗口置顶",
   "quickNote": "悬浮速记",
   "quickNoteHint": "输入任务，回车保存…",

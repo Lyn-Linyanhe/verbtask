@@ -97,6 +97,11 @@ void main() {
     await tester.tap(find.byIcon(Icons.delete_forever_rounded));
     await tester.pumpAndSettle();
 
+    // 二次确认弹窗
+    expect(find.byType(AlertDialog), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, '彻底删除'));
+    await tester.pumpAndSettle();
+
     expect(find.text('待彻底删'), findsNothing);
     expect((await repo.allTasks()).isEmpty, isTrue);
   });

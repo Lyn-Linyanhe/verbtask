@@ -173,6 +173,18 @@ class _TaskEditPageState extends State<TaskEditPage> {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: Text(l.editTask)),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: FilledButton(
+            onPressed: _save,
+            style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(52)),
+            child: Text(l.save),
+          ),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -304,13 +316,6 @@ class _TaskEditPageState extends State<TaskEditPage> {
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 26),
-          FilledButton(
-            onPressed: _save,
-            style:
-                FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-            child: Text(l.save),
           ),
         ],
       ),

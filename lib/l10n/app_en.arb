@@ -122,8 +122,10 @@
   "emptyRecycleBinTitle": "Recycle bin is empty",
   "emptyRecycleBinSubtitle": "Deleted tasks appear here and can be restored",
   "restore": "Restore",
-  "deletePermanently": "Delete permanently"
-  ,
+  "deletePermanently": "Delete permanently",
+  "deletePermanentlyConfirmTitle": "Delete permanently?",
+  "deletePermanentlyConfirmBody": "This cannot be undone. Continue?",
+  "fillLlmConfigFirst": "Fill in Base URL and API Key first, then fetch models.",
   "alwaysOnTop": "Always on top",
   "quickNote": "Quick note",
   "quickNoteHint": "Type a task, press Enter to save…",

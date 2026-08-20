@@ -82,7 +82,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final key = c.llmKey.trim();
     final l = AppLocalizations.of(context);
     if (base.isEmpty || key.isEmpty) {
-      _snack(l.fetchModelsFailed);
+      _snack(l.fillLlmConfigFirst);
       return;
     }
     try {

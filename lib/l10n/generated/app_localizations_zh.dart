@@ -399,6 +399,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deletePermanently => '彻底删除';
 
   @override
+  String get deletePermanentlyConfirmTitle => '确认彻底删除';
+
+  @override
+  String get deletePermanentlyConfirmBody => '删除后无法恢复，确定要继续吗？';
+
+  @override
+  String get fillLlmConfigFirst => '请先填写 Base URL 和 API Key，再获取模型';
+
+  @override
   String get alwaysOnTop => '窗口置顶';
 
   @override

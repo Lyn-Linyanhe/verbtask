@@ -759,6 +759,7 @@ class _TaskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final done = task.status == TaskStatus.done;
     final scheme = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     return Material(
       color: scheme.surface,
       child: InkWell(
@@ -825,6 +826,16 @@ class _TaskCard extends StatelessWidget {
                     padding: const EdgeInsets.only(right: 8),
                     child: Icon(Icons.repeat_rounded,
                         size: 16, color: scheme.primary)),
+              if (task.priority > 0)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Tooltip(
+                    message: _priorityBadgeLabel(task.priority, l),
+                    child: Icon(Icons.flag_rounded,
+                        size: 15,
+                        color: _priorityBadgeColor(task.priority, scheme)),
+                  ),
+                ),
               if (task.due != null) _DueChip(due: task.due!),
             ],
           ),
@@ -832,6 +843,19 @@ class _TaskCard extends StatelessWidget {
       ),
     );
   }
+
+  String _priorityBadgeLabel(int priority, AppLocalizations l) => switch (priority) {
+        3 => l.priorityHigh,
+        2 => l.priorityMedium,
+        1 => l.priorityLow,
+        _ => '',
+      };
+
+  Color _priorityBadgeColor(int priority, ColorScheme scheme) => switch (priority) {
+        3 => scheme.error,
+        2 => Colors.orange.shade700,
+        _ => scheme.onSurfaceVariant,
+      };
 
   String _fmt(DueDate due, AppLocalizations l) {
     final d = due.value.toLocal();
@@ -853,11 +877,11 @@ class _DueChip extends StatelessWidget {
     final local = due.value.toLocal();
     final overdue = local.isBefore(DateTime.now());
     final urgent = overdue || local.difference(DateTime.now()).inDays == 0;
+    // 仅展示有信息量的状态；普通"有期限"与左侧时间重复，不再显示
+    if (!overdue && !urgent) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
-    final color = overdue
-        ? scheme.error
-        : (urgent ? scheme.primary : scheme.onSurfaceVariant);
-    return Text(overdue ? l.overdue : (urgent ? l.today : l.hasDueDate),
+    final color = overdue ? scheme.error : scheme.primary;
+    return Text(overdue ? l.overdue : l.today,
         style:
             TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color));
   }

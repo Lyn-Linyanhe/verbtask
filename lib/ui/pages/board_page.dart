@@ -165,6 +165,20 @@ class _BoardTask extends StatelessWidget {
   final AppLocalizations l;
   final Future<void> Function(Task, TaskStatus) onMove;
 
+  String _priorityBadgeLabel(int priority, AppLocalizations l) =>
+      switch (priority) {
+        3 => l.priorityHigh,
+        2 => l.priorityMedium,
+        1 => l.priorityLow,
+        _ => '',
+      };
+
+  Color _priorityBadgeColor(int priority, ColorScheme scheme) => switch (priority) {
+        3 => scheme.error,
+        2 => Colors.orange.shade700,
+        _ => scheme.onSurfaceVariant,
+      };
+
   const _BoardTask({
     required this.task,
     required this.l,
@@ -196,6 +210,16 @@ class _BoardTask extends StatelessWidget {
                 ],
               ),
             ),
+            if (task.priority > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Tooltip(
+                  message: _priorityBadgeLabel(task.priority, l),
+                  child: Icon(Icons.flag_rounded,
+                      size: 15,
+                      color: _priorityBadgeColor(task.priority, scheme)),
+                ),
+              ),
             PopupMenuButton<TaskStatus>(
               tooltip: l.statusField,
               icon: const Icon(Icons.more_vert_rounded, size: 20),
