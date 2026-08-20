@@ -1,7 +1,7 @@
 ; VerbTask Windows 安装器
 ; 所有路径均为相对本脚本目录(installer/)解析，保证克隆后可移植编译
 #define MyAppName "VerbTask"
-#define MyAppVersion "0.4.5"
+#define MyAppVersion "0.4.6"
 #define MyAppPublisher "VerbTask contributors"
 #define MyAppExeName "verb_app.exe"
 

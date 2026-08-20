@@ -67,7 +67,9 @@ class NlpService {
 
   DueDate _dueFromLlm(String iso, bool dateOnly) {
     final parsed = DateTime.parse(iso);
-    if (dateOnly) {
+    // 若 LLM 给的字符串本身不含时间部分，一律按"仅日期"处理，避免时区漂移。
+    final noTimePart = !iso.contains('T');
+    if (dateOnly || noTimePart) {
       return DueDate(
         DateTime.utc(parsed.year, parsed.month, parsed.day),
         dateOnly: true,

@@ -55,6 +55,10 @@ class LlmClient {
   Future<LlmDraft?> enhance(String text, LlmConfig cfg) async {
     // 端点自动探测：先试常用 /chat/completions；若服务端返回非 JSON（网关 HTML 等），
     // 再试 /v1/chat/completions（很多中转站/代理的正确路径），避免静默回退本地解析。
+    // 今天日期作为相对时间基准（关键：防止 LLM 把"明天/下周一/月底"解析成过去的任意日期）。
+    final now = DateTime.now();
+    final todayStr =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     Map<String, dynamic> data = const {};
     int lastStatus = 0;
     String lastBody = '';
@@ -72,15 +76,13 @@ class LlmClient {
               'messages': [
                 {
                   'role': 'system',
-                  'content': '你是任务解析助手。把用户的中文任务文本解析成 JSON，只输出 JSON：'
-                      '{"title":"任务标题","due":"ISO8601 或 null","dateOnly":true|false,"rrule":"RRULE 或 null","priority":0|1|2|3}。'
-                      '不输出任何其他文字。',
+                  'content': _buildSystemPrompt(todayStr),
                 },
                 {'role': 'user', 'content': text},
               ],
             }),
           )
-          .timeout(const Duration(seconds: 20));
+          .timeout(const Duration(seconds: 45));
       lastStatus = resp.statusCode;
       final ct = (resp.headers['content-type'] ?? '').toLowerCase();
       final body = utf8.decode(resp.bodyBytes);
@@ -114,9 +116,37 @@ class LlmClient {
       title: map['title'] as String?,
       dueIso: map['due'] as String?,
       dateOnly: map['dateOnly'] as bool?,
-      rrule: map['rrule'] as String?,
+      rrule: _normalizeRrule(map['rrule'] as String?),
       priority: (map['priority'] as num?)?.toInt(),
     );
+  }
+
+  /// 构造解析系统提示词。注入今天日期作为相对时间基准，并约束标题/rrule/priority 语义。
+  static String _buildSystemPrompt(String today) => '''
+你是中文任务解析器。今天的日期是 $today。所有相对时间（今天/明天/后天/下周X/本周五/月底/N天后等）必须基于今天推算成绝对日期。
+
+把用户的中文任务文本解析成 JSON，只输出 JSON，不要输出任何其他文字。JSON 格式：
+{"title":"行动标题","due":"本地时间ISO8601(不带时区) 或 null","dateOnly":true或false,"rrule":"重复规则 或 null","priority":0或1或2或3}
+
+规则：
+1. title=去掉时间/日期/频率/语气词后的行动短语："明天下午3点前把周报交给我，这个很重要啊"→"交周报"；剔除"提醒我/记得/别迟到/很重要/每天/每周/上午/下午/几点"等冗余词。
+2. due 输出本地墙钟时间（不要带 Z 或时区偏移）。提到具体时刻（如"下午3点""早上十点"）→ dateOnly=false；只提到日期（如"下周一""月底前"）→ dateOnly=true；完全没时间信息 → due=null 且 dateOnly=true。
+3. 重复任务 rrule 用不带 RRULE: 前缀的 FREQ=...（如 FREQ=WEEKLY;BYDAY=MO、FREQ=MONTHLY;BYMONTHDAY=28、FREQ=DAILY;INTERVAL=14）。若重复的每次发生在固定时刻（如"每天下午六点""每周一上午九点"），必须把时刻写进 BYHOUR/BYMINUTE/BYSECOND（如 FREQ=DAILY;BYHOUR=18;BYMINUTE=0;BYSECOND=0），绝对不要丢失时刻。若明确首次时间（如"下周二下午两点开始"）则 due 填该次绝对时间；否则 due=null。
+4. priority：0=未强调/默认，1=低，2=中（提到"重要"），3=高或紧急。''';
+
+  /// 统一 rrule 格式为不带 RRULE: 前缀（与本地 zh_parser 一致，兼容下游解析）。
+  static String? _normalizeRrule(String? raw) {
+    if (raw == null) return null;
+    var t = raw.trim();
+    if ((t.startsWith('"') || t.startsWith("'")) && t.length >= 2) {
+      t = t.substring(1);
+      if (t.endsWith('"') || t.endsWith("'")) {
+        t = t.substring(0, t.length - 1);
+      }
+    }
+    t = t.trim();
+    if (t.startsWith('RRULE:')) t = t.substring('RRULE:'.length);
+    return t.isEmpty ? null : t;
   }
 
   /// 拉取 OpenAI 兼容接口的可用模型 id 列表（GET /models）。
