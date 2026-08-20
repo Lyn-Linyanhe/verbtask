@@ -114,47 +114,77 @@ class _BoardColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: width,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        border: Border.all(color: scheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 8, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(label,
-                      style: const TextStyle(fontWeight: FontWeight.w700)),
-                ),
-                Text('${tasks.length}',
-                    style: TextStyle(color: scheme.onSurfaceVariant)),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: scheme.outlineVariant),
-          Expanded(
-            child: tasks.isEmpty
-                ? Center(
-                    child: Text(l.none,
-                        style: TextStyle(color: scheme.onSurfaceVariant)))
-                : ListView.separated(
-                    padding: const EdgeInsets.all(10),
-                    itemCount: tasks.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) => _BoardTask(
-                      task: tasks[index],
-                      l: l,
-                      onMove: onMove,
-                    ),
+    return DragTarget<Task>(
+      onWillAcceptWithDetails: (d) => d.data.status != status,
+      onAcceptWithDetails: (d) => onMove(d.data, status),
+      builder: (context, candidates, rejected) => Container(
+        width: width,
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLow,
+          border: Border.all(
+              color: candidates.isNotEmpty
+                  ? scheme.primary
+                  : scheme.outlineVariant,
+              width: candidates.isNotEmpty ? 2 : 1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 8, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(label,
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
                   ),
-          ),
-        ],
+                  Text('${tasks.length}',
+                      style: TextStyle(color: scheme.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: scheme.outlineVariant),
+            Expanded(
+              child: tasks.isEmpty
+                  ? Center(
+                      child: Text(l.none,
+                          style: TextStyle(color: scheme.onSurfaceVariant)))
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(10),
+                      itemCount: tasks.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) => Draggable<Task>(
+                        data: tasks[index],
+                        feedback: Material(
+                          color: Colors.transparent,
+                          child: Card(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 10),
+                              child: Text(tasks[index].title,
+                                  maxLines: 2, overflow: TextOverflow.ellipsis),
+                            ),
+                          ),
+                        ),
+                        childWhenDragging: Opacity(
+                          opacity: 0.4,
+                          child: _BoardTask(
+                            task: tasks[index],
+                            l: l,
+                            onMove: onMove,
+                          ),
+                        ),
+                        child: _BoardTask(
+                          task: tasks[index],
+                          l: l,
+                          onMove: onMove,
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -173,7 +203,8 @@ class _BoardTask extends StatelessWidget {
         _ => '',
       };
 
-  Color _priorityBadgeColor(int priority, ColorScheme scheme) => switch (priority) {
+  Color _priorityBadgeColor(int priority, ColorScheme scheme) =>
+      switch (priority) {
         3 => scheme.error,
         2 => Colors.orange.shade700,
         _ => scheme.onSurfaceVariant,

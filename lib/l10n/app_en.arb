@@ -45,6 +45,7 @@
   "languageEnglish": "English",
   "emptyInboxTitle": "Inbox is empty",
   "emptyInboxSubtitle": "Capture something to do and finish it here",
+  "emptyInboxSubtitleHint": "Type naturally above, e.g. 明天下午3点 交周报 — give it a try",
   "emptyDoneTitle": "No completed tasks yet",
   "emptyDoneSubtitle": "Completed tasks will appear here",
   "emptyListTitle": "No list tasks yet",

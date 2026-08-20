@@ -368,6 +368,12 @@ abstract class AppLocalizations {
   /// **'Capture something to do and finish it here'**
   String get emptyInboxSubtitle;
 
+  /// No description provided for @emptyInboxSubtitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type naturally above, e.g. 明天下午3点 交周报 — give it a try'**
+  String get emptyInboxSubtitleHint;
+
   /// No description provided for @emptyDoneTitle.
   ///
   /// In en, this message translates to:

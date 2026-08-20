@@ -158,6 +158,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emptyInboxSubtitle => 'Capture something to do and finish it here';
 
   @override
+  String get emptyInboxSubtitleHint =>
+      'Type naturally above, e.g. 明天下午3点 交周报 — give it a try';
+
+  @override
   String get emptyDoneTitle => 'No completed tasks yet';
 
   @override

@@ -45,6 +45,7 @@
   "languageEnglish": "English",
   "emptyInboxTitle": "收件箱是空的",
   "emptyInboxSubtitle": "把要做的事记下来，随手完成",
+  "emptyInboxSubtitleHint": "在上方输入自然语言试试，比如：明天下午3点 交周报",
   "emptyDoneTitle": "还没有已完成的任务",
   "emptyDoneSubtitle": "勾选任务即可在这里看到",
   "emptyListTitle": "还没有清单任务",

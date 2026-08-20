@@ -158,6 +158,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get emptyInboxSubtitle => '把要做的事记下来，随手完成';
 
   @override
+  String get emptyInboxSubtitleHint => '在上方输入自然语言试试，比如：明天下午3点 交周报';
+
+  @override
   String get emptyDoneTitle => '还没有已完成的任务';
 
   @override

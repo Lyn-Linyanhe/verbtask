@@ -714,7 +714,7 @@ class _EmptyState extends StatelessWidget {
       ViewFilter.inbox => (
           Icons.inbox_rounded,
           l.emptyInboxTitle,
-          l.emptyInboxSubtitle
+          l.emptyInboxSubtitleHint
         ),
       ViewFilter.today => (
           Icons.today_rounded,
