@@ -1,0 +1,7 @@
+[{ "id": "E1", "input": "明天下班后去买菜", "expect": "due=明天18:00 左右, title=买菜" },
+ { "id": "E2", "input": "Call Michael at 3pm tomorrow about the budget", "expect": "title=call michael, due=明天15:00" },
+ { "id": "E3", "input": "买牛奶🥛和鸡蛋🥚，还有面包🍞", "expect": "title 保留, due=null" },
+ { "id": "E4", "input": "后天下午2点前回复邮件 记得提前15分钟", "expect": "due=后天14:00, reminder=15" },
+ { "id": "E5", "input": "非常非常非常紧急：今天必须把方案定下来", "expect": "due=今天仅日期, pri=3, title=定方案" },
+ { "id": "E6", "input": "哈哈哈哈哈哈哈哈哈哈哈哈", "expect": "回退本地，标题用原文兜底（不创建空标题任务）" }
+]

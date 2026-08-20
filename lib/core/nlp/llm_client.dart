@@ -165,9 +165,9 @@ class LlmClient {
 规则：
 1. title=去掉时间/日期/频率/语气词后的行动短语："明天下午3点前把周报交给我，这个很重要啊"→"交周报"；剔除"提醒我/记得/别迟到/很重要/每天/每周/上午/下午/几点"等冗余词。
 2. due 输出本地墙钟时间（不要带 Z 或时区偏移）。提到具体时刻（如"下午3点""早上十点"）→ dateOnly=false；只提到日期（如"下周一""月底前"）→ dateOnly=true。若文本隐含合理默认期限，也应给出 due 而非 null："这个月/本月做X"→当月最后一天(dateOnly=true)；"睡前/临睡前做X"→今晚23:00；"下班后做X"→当天18:00；"周末做X"→最近的周末日期。完全没有时间概念的事务（如"买瓶酱油"）才给 due=null。
-3. 重复任务 rrule 用不带 RRULE: 前缀的 FREQ=...（如 FREQ=WEEKLY;BYDAY=MO、FREQ=MONTHLY;BYMONTHDAY=28、FREQ=DAILY;INTERVAL=14）。"每两周/两周一次/每隔两周"→FREQ=WEEKLY;INTERVAL=2（间隔写的是周数！绝不写 BIWEEKLY，也绝不把"两周"写成 INTERVAL=14——那表示 14 周）。若重复的每次发生在固定时刻（如"每天下午六点""每周一上午九点"），必须把时刻写进 BYHOUR/BYMINUTE/BYSECOND（如 FREQ=DAILY;BYHOUR=18;BYMINUTE=0;BYSECOND=0），绝对不要丢失时刻。若明确首次时间（如"下周二下午两点开始"）则 due 填该次绝对时间；否则 due=null。
-4. priority：0=未强调/默认，1=低，2=中（提到"重要"），3=高或紧急。
-5. 提醒：reminderMinutes=到期前提醒的分钟数："提前10分钟提醒我"→10、"提前半小时"→30；当"提醒我/记得提醒"是祈使（提醒我去做某事）时必须设置，无提前量→15，并把"提醒我/记得提醒"从 title 剔除（title 只留动作）；完全没提提醒→null。''';
+3. 重复任务 rrule 用不带 RRULE: 前缀的 FREQ=...（如 FREQ=WEEKLY;BYDAY=MO、FREQ=MONTHLY;BYMONTHDAY=28、FREQ=DAILY;INTERVAL=14）。"每两周/两周一次/每隔两周"→FREQ=WEEKLY;INTERVAL=2（间隔写的是周数！绝不写 BIWEEKLY，也绝不把"两周"写成 INTERVAL=14——那表示 14 周）。若重复的每次发生在固定时刻（如"每天下午六点""每周一上午九点"），必须把时刻写进 BYHOUR/BYMINUTE/BYSECOND（如 FREQ=DAILY;BYHOUR=18;BYMINUTE=0;BYSECOND=0），绝对不要丢失时刻，即使"提醒我/记得"在句首：""提醒我每周五下午提交周报""→FREQ=WEEKLY;BYDAY=FR;BYHOUR=15;BYMINUTE=0;BYSECOND=0、""每两周周五下午开周会""→FREQ=WEEKLY;INTERVAL=2;BYDAY=FR;BYHOUR=15;BYMINUTE=0;BYSECOND=0。""下班后/下班""按 18:00 处理：""每天下班后打卡""→FREQ=DAILY;BYHOUR=18;BYMINUTE=0;BYSECOND=0。""每月月底/月末做账""→FREQ=MONTHLY;BYMONTHDAY=-1（月底=当月最后一天，必须用 -1，绝不写 31！）。""每周末/每个周末做X""→FREQ=WEEKLY;BYDAY=SA,SU（周末=周六和周日两天，不是只周六）。若文本未给具体时刻（如""每周五交周报""），rrule 不要写 BYHOUR/BYMINUTE/BYSECOND。若只给时间段词没给数字：""下午""默认15:00、""上午/早上""默认9:00、""中午""默认12:00、""傍晚/下班后""默认18:00、""晚上""默认20:00、""睡前""默认23:00，如""每周五下午提交周报""→FREQ=WEEKLY;BYDAY=FR;BYHOUR=15;BYMINUTE=0;BYSECOND=0。若明确首次时间（如"下周二下午两点开始"）则 due 填该次绝对时间；否则 due=null。
+4. priority：0=未强调/默认，1=低，2=中（提到"重要"），3=高或紧急。只有出现"紧急/重要/高/低/P1-P3/!!"等明确词才设置；不要因为任务性质（如面试/开会/交报告/去医院）自动提高优先级，默认一律 0。
+5. 提醒：reminderMinutes=到期前提醒的分钟数："提前10分钟提醒我"→10、"提前半小时"→30、"提前三天"→4320；当"提醒我/记得提醒/叫我/叫醒/闹钟/记得/记着/记住"是祈使（提醒我去做某事）时必须设置，无提前量→15，并把这类词从 title 剔除（title 只留动作），如"明天早上叫我起床"→title=起床、reminderMinutes=15；完全没提提醒→null。''';
 
   /// 统一 rrule 格式为不带 RRULE: 前缀（与本地 zh_parser 一致，兼容下游解析）。
   static String? _normalizeRrule(String? raw) {
@@ -253,6 +253,7 @@ class LlmClient {
     }
   }
 }
+
 
 
 

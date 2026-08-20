@@ -1,0 +1,21 @@
+[
+ { "id": "H1", "input": "每个工作日早上9点打卡", "expect": "rrule=WEEKLY MO-FR;BYHOUR=9" },
+ { "id": "H2", "input": "每个工作日提醒我打卡", "expect": "rrule=WEEKLY MO-FR, rem=15" },
+ { "id": "H3", "input": "每月最后一天交月报", "expect": "rrule=MONTHLY;BYMONTHDAY=-1" },
+ { "id": "H4", "input": "每季度做一次体检", "expect": "rrule=MONTHLY;INTERVAL=3" },
+ { "id": "H5", "input": "每年6月体检一次", "expect": "rrule=YEARLY;BYMONTH=6" },
+ { "id": "H6", "input": "每周一三五跑步", "expect": "rrule=WEEKLY;BYDAY=MO,WE,FR" },
+ { "id": "H7", "input": "明天下午三点之前交报告 提前五分钟提醒", "expect": "rem=5" },
+ { "id": "H8", "input": "这个月月底前交房租 提前三天提醒我", "expect": "due=月末, rem=4320" },
+ { "id": "H10", "input": "提醒我每周五下午提交周报", "expect": "rrule=WEEKLY;BYDAY=FR;BYHOUR=15, rem=15" },
+ { "id": "H11", "input": "下周三之前把文件发给他", "expect": "due=下周三(仅日期)" },
+ { "id": "H12", "input": "明天下午4点半去接孩子", "expect": "due=明天16:30" },
+ { "id": "H13", "input": "帮我记着每天晚上10点吃药", "expect": "rrule=DAILY 22:00, rem=15" },
+ { "id": "H14", "input": "周三下午三点开会，提前10分钟", "expect": "due=周三15:00, rem=10" },
+ { "id": "H15", "input": "每两周周五下午开周会", "expect": "rrule=WEEKLY;INTERVAL=2;BYDAY=FR;BYHOUR=15" },
+ { "id": "H16", "input": "明天早上叫我起床", "expect": "rem=15" },
+ { "id": "H17", "input": "每周六上午十点提醒我上瑜伽课", "expect": "rrule=WEEKLY;BYDAY=SA;BYHOUR=10, rem=15" },
+ { "id": "H18", "input": "今晚提醒我给妈妈打电话", "expect": "due=今晚, rem=15" },
+ { "id": "H19", "input": "明早六点半叫我起来晨跑", "expect": "due=明早06:30, rem=15" },
+ { "id": "H20", "input": "每周一和周四晚上八点学英语", "expect": "rrule=WEEKLY;BYDAY=MO,TH;BYHOUR=20" }
+]

@@ -129,11 +129,22 @@ class ZhParser {
     // ---- 时间 ----
     int? hour; int minute = 0;
     final amPm = RegExp(r'(上午|下午|晚上|傍晚|凌晨)');
-    final timeToken = RegExp(r'(\d{1,2})([:：](\d{1,2}))?\s*点(半)?');
+    final timeToken = RegExp(
+        r'((?:\d{1,2})|(?:[零一二两三四五六七八九十]+))'
+        r'([:：]((?:\d{1,2})|(?:[零一二两三四五六七八九十]+)))?'
+        r'\s*点(半|一刻|三刻)?');
     final tm = timeToken.firstMatch(text);
     if (tm != null) {
-      final h = int.parse(tm.group(1)!);
-      minute = tm.group(3) != null ? int.parse(tm.group(3)!) : (tm.group(4) == '半' ? 30 : 0);
+      final h = _cnToInt(tm.group(1)!);
+      final mm = tm.group(3) != null ? _cnToInt(tm.group(3)!) : null;
+      minute = mm ??
+          (tm.group(4) == '半'
+              ? 30
+              : tm.group(4) == '一刻'
+                  ? 15
+                  : tm.group(4) == '三刻'
+                      ? 45
+                      : 0);
       var resolved = h;
       final marker = amPm.firstMatch(text)?.group(1);
       if (marker == '下午' || marker == '晚上' || marker == '傍晚') {
@@ -145,6 +156,33 @@ class ZhParser {
       dateOnly = false;
       text = text.replaceAll(tm.group(0)!, ' ');
       if (marker != null) text = text.replaceAll(marker, ' ');
+    }
+
+    // 无显式数字时刻时的“时间段默认时刻”（与 LLM 提示词规则一致）
+    if (hour == null) {
+      int? dh;
+      if (text.contains('下班') || text.contains('傍晚')) {
+        dh = 18;
+      } else if (text.contains('睡前')) {
+        dh = 23;
+      } else if (text.contains('下午')) {
+        dh = 15;
+      } else if (text.contains('中午')) {
+        dh = 12;
+      } else if (text.contains('晚上') || text.contains('夜晚')) {
+        dh = 20;
+      } else if (text.contains('上午') ||
+          text.contains('早上') ||
+          text.contains('早晨') ||
+          text.contains('清晨')) {
+        dh = 9;
+      } else if (text.contains('凌晨')) {
+        dh = 0;
+      }
+      if (dh != null) {
+        hour = dh;
+        dateOnly = false;
+      }
     }
 
     // 普通任务：仅时刻默认今天；重复任务：时刻写进 rrule（与 LLM 路径语义一致）
@@ -161,7 +199,7 @@ class ZhParser {
       due = DateTime.utc(due.year, due.month, due.day);
     }
     // 无具体时刻的纯时间段词（上午/晚上/凌晨等）也要从标题剥离
-    text = text.replaceAll(RegExp(r'上午|下午|晚上|傍晚|凌晨|中午|白天|夜晚'), ' ');
+    text = text.replaceAll(RegExp(r'上午|早上|早晨|清晨|下午|晚上|傍晚|凌晨|中午|白天|夜晚|下班后|下班|睡前|临睡前|帮我|给我|麻烦你|请你'), ' ');
 
     // ---- 提醒 ----
     int? reminderMinutes;
@@ -186,10 +224,11 @@ class ZhParser {
       }
     }
     if (reminderToken.isNotEmpty) text = text.replaceFirst(reminderToken, ' ');
-    if (reminderMinutes == null && text.contains('提醒')) {
-      reminderMinutes = 15; // 只说"提醒"未给提前量 → 默认提前15分钟
+    if (reminderMinutes == null && RegExp(r'提醒|叫我|叫醒|闹钟|记得|记着|记住').hasMatch(text)) {
+      reminderMinutes = 15; // 提醒意图（提醒/叫我/叫醒/闹钟/记得）未给提前量 → 默认提前15分钟
     }
-    text = text.replaceAll(RegExp(r'提醒\s*我|记得提醒|提醒'), ' ');
+    text = text.replaceAll(
+        RegExp(r'提醒\s*我|记得提醒|提醒|叫我|叫醒|闹钟|记得|记着|记住'), ' ');
 
     // ---- 优先级 ----
     int? priority;
@@ -217,6 +256,22 @@ class ZhParser {
       if (m != null) return m.group(0)!;
     }
     return null;
+  }
+
+
+  /// 中文数字（含“两/十/二十/十一”等）与阿拉伯数字 → int。
+  static int _cnToInt(String s) {
+    final digit = int.tryParse(s);
+    if (digit != null) return digit;
+    const map = {
+      '零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4,
+      '五': 5, '六': 6, '七': 7, '八': 8, '九': 9,
+    };
+    if (s == '十') return 10;
+    if (s.length == 1) return map[s] ?? 0;
+    if (s.startsWith('十')) return 10 + (map[s[1]] ?? 0);
+    if (s.endsWith('十')) return (map[s[0]] ?? 0) * 10;
+    return (map[s[0]] ?? 0) * 10 + (map[s[1]] ?? 0);
   }
 
   static String wdToDay(String w) {
@@ -247,6 +302,9 @@ class ZhParser {
     return base;
   }
 }
+
+
+
 
 
 
