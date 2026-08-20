@@ -29,6 +29,7 @@ class _SettingsPageState extends State<SettingsPage> {
   late final TextEditingController _llmUrl;
   late final TextEditingController _llmKey;
   late final TextEditingController _syncMin;
+  late final TextEditingController _llmModel;
   late final TextEditingController _notifyMin;
   late final TextEditingController _syncToken;
   late ThemeMode _themeMode;
@@ -39,6 +40,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _themeMode = widget.themeMode;
     _llmUrl = TextEditingController(text: widget.controller.llmBaseUrl);
     _llmKey = TextEditingController(text: widget.controller.llmKey);
+    _llmModel = TextEditingController(text: widget.controller.llmModel);
     _syncMin = TextEditingController(
         text: widget.controller.syncAutoIntervalMin.toString());
     _notifyMin = TextEditingController(
@@ -58,6 +60,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void dispose() {
     _llmUrl.dispose();
     _llmKey.dispose();
+    _llmModel.dispose();
     _syncMin.dispose();
     _notifyMin.dispose();
     _syncToken.dispose();
@@ -179,6 +182,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   onChanged: (v) => c.llmKey = v,
                   obscureText: true,
                   decoration: InputDecoration(labelText: l.apiKeyLabel)),
+              const SizedBox(height: 12),
+              TextField(
+                  controller: _llmModel,
+                  onChanged: (v) => c.llmModel = v,
+                  decoration: InputDecoration(labelText: l.modelLabel)),
             ])),
         _Section(
             title: l.syncAndReminders,
@@ -326,4 +334,6 @@ class _NumberField extends StatelessWidget {
       onChanged: onChanged,
       decoration: InputDecoration(labelText: label));
 }
+
+
 

@@ -26,6 +26,8 @@ class LocalSettings {
 
   int get llmEnabled => (_m['llmEnabled'] as num?)?.toInt() ?? 0;
   set llmEnabled(int v) => _m['llmEnabled'] = v;
+  String get llmModel => (_m['llmModel'] as String?) ?? '';
+  set llmModel(String v) => _m['llmModel'] = v;
 
   int get syncAutoIntervalMin =>
       (_m['syncAutoIntervalMin'] as num?)?.toInt() ?? 30;

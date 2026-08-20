@@ -692,6 +692,12 @@ abstract class AppLocalizations {
   /// **'API key (stored locally)'**
   String get apiKeyLabel;
 
+  /// No description provided for @modelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model (e.g. gpt-4o-mini / deepseek-chat)'**
+  String get modelLabel;
+
   /// No description provided for @syncAndReminders.
   ///
   /// In en, this message translates to:

@@ -99,6 +99,7 @@
   "llmFallbackNotice": "LLM unavailable; fell back to offline parsing",
   "baseUrlLabel": "Base URL (OpenAI-compatible)",
   "apiKeyLabel": "API key (stored locally)",
+  "modelLabel": "Model (e.g. gpt-4o-mini / deepseek-chat)",
   "syncAndReminders": "Sync and reminders",
   "autoSyncIntervalMinutes": "Auto-sync interval (minutes)",
   "useDefaultReminder": "Use default reminder",
@@ -126,3 +127,4 @@
   "restoreWindow": "Restore window",
   "exitQuickNote": "Exit quick note"
 }
+

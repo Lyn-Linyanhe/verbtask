@@ -36,6 +36,11 @@ class SettingsController extends ChangeNotifier {
     settings.llmEnabled = v;
     _save();
   }
+  String get llmModel => settings.llmModel;
+  set llmModel(String v) {
+    settings.llmModel = v;
+    _save();
+  }
 
   int get syncAutoIntervalMin => settings.syncAutoIntervalMin;
   set syncAutoIntervalMin(int v) {

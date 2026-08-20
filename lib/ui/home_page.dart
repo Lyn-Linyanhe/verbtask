@@ -219,7 +219,7 @@ class _HomePageState extends State<HomePage> {
     final base = s.llmBaseUrl.trim();
     final key = s.llmKey.trim();
     if (base.isEmpty || key.isEmpty) return null;
-    return LlmConfig(baseUrl: base, apiKey: key);
+    return LlmConfig(baseUrl: base, apiKey: key, model: s.llmModel.trim());
   }
 
   String _priorityName(int? priority, AppLocalizations l) => switch (priority) {
@@ -862,6 +862,7 @@ class _DueChip extends StatelessWidget {
             TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color));
   }
 }
+
 
 
 

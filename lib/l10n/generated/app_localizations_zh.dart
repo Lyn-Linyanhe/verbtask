@@ -327,6 +327,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get apiKeyLabel => 'API Key（本地保存）';
 
   @override
+  String get modelLabel => '模型（如 gpt-4o-mini / deepseek-chat）';
+
+  @override
   String get syncAndReminders => '同步与提醒';
 
   @override

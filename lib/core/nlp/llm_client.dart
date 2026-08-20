@@ -5,7 +5,12 @@ import 'package:http/http.dart' as http;
 class LlmConfig {
   final String baseUrl;
   final String apiKey;
-  const LlmConfig({required this.baseUrl, required this.apiKey});
+  final String model; // 模型名；为空时客户端回退默认
+  const LlmConfig({
+    required this.baseUrl,
+    required this.apiKey,
+    this.model = '',
+  });
 }
 
 /// 未配置 / 调用失败。
@@ -46,7 +51,7 @@ class LlmClient {
             if (cfg.apiKey.isNotEmpty) 'Authorization': 'Bearer ${cfg.apiKey}',
           },
           body: jsonEncode({
-            'model': 'gpt-4o-mini',
+            'model': cfg.model.isEmpty ? 'gpt-4o-mini' : cfg.model,
             'messages': [
               {
                 'role': 'system',
@@ -100,3 +105,5 @@ class LlmClient {
     }
   }
 }
+
+

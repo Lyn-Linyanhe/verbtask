@@ -331,6 +331,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get apiKeyLabel => 'API key (stored locally)';
 
   @override
+  String get modelLabel => 'Model (e.g. gpt-4o-mini / deepseek-chat)';
+
+  @override
   String get syncAndReminders => 'Sync and reminders';
 
   @override
