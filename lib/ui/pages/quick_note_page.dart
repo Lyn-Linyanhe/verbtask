@@ -81,9 +81,9 @@ class _QuickNotePageState extends State<QuickNotePage> {
               child: TextField(
                 controller: _input,
                 autofocus: true,
-                maxLines: 3,
+                maxLines: 1,
                 minLines: 1,
-                textInputAction: TextInputAction.newline,
+                textInputAction: TextInputAction.done,
                 onSubmitted: _save,
                 decoration: InputDecoration(
                   hintText: l.quickNoteHint,
@@ -99,3 +99,4 @@ class _QuickNotePageState extends State<QuickNotePage> {
     );
   }
 }
+
