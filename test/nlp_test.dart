@@ -15,10 +15,31 @@ void main() {
     expect(d.title, '交报告');
     expect(d.rrule, isNull);
   });
-  test('每天 -> RRULE', () {
+  test('每天+时刻 -> RRULE 带 BYHOUR，时刻不再丢失', () {
     final d = p.parse('每天晚上9点锻炼');
-    expect(d.rrule, 'FREQ=DAILY');
+    expect(d.rrule, 'FREQ=DAILY;BYHOUR=21;BYMINUTE=0;BYSECOND=0');
     expect(d.title, '锻炼');
+  });
+  test('仅时刻无日期 -> 默认今天', () {
+    final d = p.parse('下午5点半开会');
+    expect(d.due, isNotNull);
+    expect(d.due!.toLocal().hour, 17);
+    expect(d.due!.toLocal().minute, 30);
+  });
+  test('每周六日 -> BYDAY=SA,SU', () {
+    final d = p.parse('每周六日去爸妈家');
+    expect(d.rrule, 'FREQ=WEEKLY;BYDAY=SA,SU');
+    expect(d.title, '去爸妈家');
+  });
+  test('月底 -> 当月最后一天', () {
+    final d = p.parse('月底前交房租');
+    expect(d.due, isNotNull);
+    expect(d.dateOnly, isTrue);
+  });
+  test('明早 -> 明天', () {
+    final d = p.parse('明早交报告');
+    expect(d.due, isNotNull);
+    expect(d.title, '交报告');
   });
   test('下周三下午3点 -> 时间+日期', () {
     final d = p.parse('下周三下午3点交报告');

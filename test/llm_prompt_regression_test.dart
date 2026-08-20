@@ -85,6 +85,15 @@ void main() {
     expect(r.source, 'local');
     expect(r.fallbackFromLlm, isTrue);
   });
+
+  test('parse: LLM 返回空/空白标题时回退本地（避免创建空标题任务）', () async {
+    final fake = _FakeLlm(const LlmDraft(
+        title: '   ', dueIso: null, dateOnly: false, rrule: null, priority: 0));
+    final svc = NlpService(llm: fake);
+    final r = await svc.parse('明天交报告', config: cfg);
+    expect(r.source, 'local');
+    expect(r.fallbackFromLlm, isTrue);
+  });
 }
 
 class _FakeLlm extends LlmClient {

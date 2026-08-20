@@ -21,6 +21,13 @@ class ZhDraft {
 class ZhParser {
   ZhDraft parse(String input) {
     var text = input.trim();
+    // 复合时间词归一化为基础词：明早/明晚/今早/今晚 -> 明天/今天 + 时间段
+    text = text
+        .replaceAll('明早', '明天上午')
+        .replaceAll('明晚', '明天晚上')
+        .replaceAll('今早', '今天上午')
+        .replaceAll('今晚', '今天晚上')
+        .replaceAll('大后天', '大后天'); // 占位，真实处理在日期分支
     String? rrule;
     String? rruleToken;
 
@@ -36,11 +43,16 @@ class ZhParser {
       } else if (everyNweek.hasMatch(text)) {
         rrule = 'FREQ=WEEKLY;INTERVAL=${everyNweek.firstMatch(text)!.group(1)}';
       } else {
-        final weekly = RegExp(r'每(?:周|星期|礼拜)([一二三四五六日天])?');
+        final weekly = RegExp(r'每(?:周|星期|礼拜)([一二三四五六日天]+)');
         final m = weekly.firstMatch(text);
         if (m != null) {
-          final wd = m.group(1);
-          rrule = wd == null ? 'FREQ=WEEKLY' : 'FREQ=WEEKLY;BYDAY=${wdToDay(wd)}';
+          final days = m.group(1)!;
+          final seen = <String>{};
+          final list = <String>[];
+          for (final ch in days.split('')) {
+            if (seen.add(ch)) list.add(wdToDay(ch));
+          }
+          rrule = list.isEmpty ? 'FREQ=WEEKLY' : 'FREQ=WEEKLY;BYDAY=${list.join(',')}';
         } else if (text.contains('每周') || text.contains('每星期')) {
           rrule = 'FREQ=WEEKLY';
         } else {
@@ -59,7 +71,7 @@ class ZhParser {
     if (rrule != null) {
       final seg = _matchingSegment(text, [
         RegExp(r'每隔\s*\d+\s*天'), RegExp(r'每隔\s*\d+\s*周'),
-        RegExp(r'每(?:周|星期|礼拜)[一二三四五六日天]?'),
+        RegExp(r'每(?:周|星期|礼拜)[一二三四五六日天]+'),
         RegExp(r'每月\s*\d+\s*号'), RegExp(r'每个月?'), RegExp(r'每天工作日'),
         RegExp(r'每个工作日'), RegExp(r'每工作日'), RegExp(r'每日'), RegExp(r'每天'),
       ]);
@@ -73,7 +85,9 @@ class ZhParser {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    if (text.contains('后天')) {
+    if (text.contains('大后天')) {
+      due = today.add(const Duration(days: 3)); dateOnly = true;
+    } else if (text.contains('后天')) {
       due = today.add(const Duration(days: 2)); dateOnly = true;
     } else if (text.contains('明天') || text.contains('明日')) {
       due = today.add(const Duration(days: 1)); dateOnly = true;
@@ -97,15 +111,18 @@ class ZhParser {
     } else if (RegExp(r'\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?').hasMatch(text)) {
       final m = RegExp(r'(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})[日]?').firstMatch(text)!;
       due = DateTime(int.parse(m.group(1)!), int.parse(m.group(2)!), int.parse(m.group(3)!)); dateOnly = true;
+    } else if (text.contains('月底') || text.contains('月末')) {
+      due = DateTime(today.year, today.month + 1, 0); dateOnly = true;
     }
 
     // 移除日期 token（仅当不在"每"周期里）
-    final dateTokens = ['后天','明天','明日','今天','今日','现在'];
+    final dateTokens = ['大后天','后天','明天','明日','今天','今日','现在'];
     for (final t in dateTokens) { if (text.contains(t)) text = text.replaceAll(t, ' '); }
     text = text.replaceAll(RegExp(r'(?:下|本|这|那)(?:周|星期|礼拜)[一二三四五六日天]?|(?:周|星期|礼拜)[一二三四五六日天](?!报)'), ' ');
     text = text.replaceAll(RegExp(r'\d{1,2}月\d{1,2}[号日]'), ' ');
     text = text.replaceAll(RegExp(r'\d+号'), ' ');
     text = text.replaceAll(RegExp(r'\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?'), ' ');
+    text = text.replaceAll(RegExp(r'月底前|月末前|月底|月末'), ' ');
 
     // ---- 时间 ----
     int? hour; int minute = 0;
@@ -128,11 +145,21 @@ class ZhParser {
       if (marker != null) text = text.replaceAll(marker, ' ');
     }
 
-    if (due != null && hour != null) {
-      due = DateTime(due.year, due.month, due.day, hour, minute).toUtc();
+    // 普通任务：仅时刻默认今天；重复任务：时刻写进 rrule（与 LLM 路径语义一致）
+    if (hour != null) {
+      if (rrule != null) {
+        rrule = '$rrule;BYHOUR=$hour;BYMINUTE=$minute;BYSECOND=0';
+        dateOnly = false;
+      } else {
+        final base = due ?? today;
+        due = DateTime(base.year, base.month, base.day, hour, minute).toUtc();
+        dateOnly = false;
+      }
     } else if (due != null) {
       due = DateTime.utc(due.year, due.month, due.day);
     }
+    // 无具体时刻的纯时间段词（上午/晚上/凌晨等）也要从标题剥离
+    text = text.replaceAll(RegExp(r'上午|下午|晚上|傍晚|凌晨|中午|白天|夜晚'), ' ');
 
     // ---- 优先级 ----
     int? priority;
@@ -141,7 +168,9 @@ class ZhParser {
     else if (RegExp(r'低|p3').hasMatch(text.toLowerCase())) { priority = 1; }
     text = text.replaceAll(RegExp(r'紧急|重要|高|中|低|P[1-3]|!'), ' ');
 
-    final title = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    var title = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    title = title.replaceFirst(RegExp(r'^[\s：:，,。.、]+'), '');
+    title = title.replaceFirst(RegExp(r'[\s：:，,。.、]+$'), '');
     return ZhDraft(
       title: title.isEmpty ? input.trim() : title,
       due: due,

@@ -46,7 +46,8 @@ class NlpService {
     if (llm != null && config != null) {
       try {
         final d = await llm!.enhance(text, config);
-        if (d != null && d.title != null) {
+        // 空标题（空白/无意义输入）不算有效解析，回退本地用原文兜底，避免创建空标题任务
+        if (d != null && d.title != null && d.title!.trim().isNotEmpty) {
           return NlpResult(
             title: d.title,
             due: d.dueIso != null
