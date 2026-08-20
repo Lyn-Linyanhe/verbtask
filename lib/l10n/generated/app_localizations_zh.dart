@@ -330,6 +330,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get modelLabel => '模型（如 gpt-4o-mini / deepseek-chat）';
 
   @override
+  String get fetchModels => '获取可用模型';
+
+  @override
+  String get fetchModelsFailed => '无法获取模型列表（接口可能不支持 /models，请手动填写）';
+
+  @override
+  String get noModels => '此接口未返回模型列表';
+
+  @override
   String get syncAndReminders => '同步与提醒';
 
   @override

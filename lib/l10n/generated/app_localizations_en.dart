@@ -334,6 +334,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelLabel => 'Model (e.g. gpt-4o-mini / deepseek-chat)';
 
   @override
+  String get fetchModels => 'Fetch models';
+
+  @override
+  String get fetchModelsFailed =>
+      'Could not fetch models (endpoint may not support /models; enter manually)';
+
+  @override
+  String get noModels => 'No models returned by this endpoint';
+
+  @override
   String get syncAndReminders => 'Sync and reminders';
 
   @override

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../core/settings/settings_controller.dart';
+import '../../core/nlp/llm_client.dart';
 import '../../app/window_control.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -70,6 +71,49 @@ class _SettingsPageState extends State<SettingsPage> {
   void _snack(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  /// 拉取 OpenAI 兼容接口的可用模型，供用户选择。
+  Future<void> _fetchModels() async {
+    final c = widget.controller;
+    final base = c.llmBaseUrl.trim();
+    final key = c.llmKey.trim();
+    final l = AppLocalizations.of(context);
+    if (base.isEmpty || key.isEmpty) {
+      _snack(l.fetchModelsFailed);
+      return;
+    }
+    try {
+      final models = await LlmClient().listModels(
+        LlmConfig(baseUrl: base, apiKey: key, model: c.llmModel.trim()),
+      );
+      if (!mounted) return;
+      if (models.isEmpty) {
+        _snack(l.noModels);
+        return;
+      }
+      final selected = await showDialog<String>(
+        context: context,
+        builder: (ctx) => SimpleDialog(
+          title: Text(AppLocalizations.of(ctx).fetchModels),
+          children: [
+            for (final m in models)
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, m),
+                child: Text(m, maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+          ],
+        ),
+      );
+      if (selected != null && mounted) {
+        setState(() {
+          c.llmModel = selected;
+          _llmModel.text = selected;
+        });
+      }
+    } catch (_) {
+      if (mounted) _snack(l.fetchModelsFailed);
+    }
   }
 
   Future<void> _export() async {
@@ -186,7 +230,12 @@ class _SettingsPageState extends State<SettingsPage> {
               TextField(
                   controller: _llmModel,
                   onChanged: (v) => c.llmModel = v,
-                  decoration: InputDecoration(labelText: l.modelLabel)),
+                  decoration: InputDecoration(
+                      labelText: l.modelLabel,
+                      suffixIcon: IconButton(
+                          tooltip: l.fetchModels,
+                          icon: const Icon(Icons.download_rounded, size: 20),
+                          onPressed: _fetchModels))),
             ])),
         _Section(
             title: l.syncAndReminders,
@@ -334,6 +383,8 @@ class _NumberField extends StatelessWidget {
       onChanged: onChanged,
       decoration: InputDecoration(labelText: label));
 }
+
+
 
 
 

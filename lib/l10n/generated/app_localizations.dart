@@ -698,6 +698,24 @@ abstract class AppLocalizations {
   /// **'Model (e.g. gpt-4o-mini / deepseek-chat)'**
   String get modelLabel;
 
+  /// No description provided for @fetchModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch models'**
+  String get fetchModels;
+
+  /// No description provided for @fetchModelsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not fetch models (endpoint may not support /models; enter manually)'**
+  String get fetchModelsFailed;
+
+  /// No description provided for @noModels.
+  ///
+  /// In en, this message translates to:
+  /// **'No models returned by this endpoint'**
+  String get noModels;
+
   /// No description provided for @syncAndReminders.
   ///
   /// In en, this message translates to:

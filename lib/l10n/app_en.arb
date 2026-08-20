@@ -100,6 +100,9 @@
   "baseUrlLabel": "Base URL (OpenAI-compatible)",
   "apiKeyLabel": "API key (stored locally)",
   "modelLabel": "Model (e.g. gpt-4o-mini / deepseek-chat)",
+  "fetchModels": "Fetch models",
+  "fetchModelsFailed": "Could not fetch models (endpoint may not support /models; enter manually)",
+  "noModels": "No models returned by this endpoint",
   "syncAndReminders": "Sync and reminders",
   "autoSyncIntervalMinutes": "Auto-sync interval (minutes)",
   "useDefaultReminder": "Use default reminder",
@@ -127,4 +130,5 @@
   "restoreWindow": "Restore window",
   "exitQuickNote": "Exit quick note"
 }
+
 

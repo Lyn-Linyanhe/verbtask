@@ -86,6 +86,43 @@ class LlmClient {
     );
   }
 
+  /// 拉取 OpenAI 兼容接口的可用模型 id 列表（GET /models）。
+  Future<List<String>> listModels(LlmConfig cfg) async {
+    final resp = await _http
+        .get(
+          Uri.parse(_modelsEndpoint(cfg.baseUrl)),
+          headers: {
+            'Content-Type': 'application/json',
+            if (cfg.apiKey.isNotEmpty) 'Authorization': 'Bearer ${cfg.apiKey}',
+          },
+        )
+        .timeout(const Duration(seconds: 15));
+    if (resp.statusCode != 200) {
+      throw LlmUnavailable('HTTP ${resp.statusCode}');
+    }
+    final data = jsonDecode(utf8.decode(resp.bodyBytes));
+    final arr = (data['data'] as List?) ?? const [];
+    final names = <String>[];
+    for (final item in arr) {
+      if (item is Map && item['id'] is String) {
+        names.add(item['id'] as String);
+      }
+    }
+    return names;
+  }
+
+  /// 从 base_url 推导 /models 端点（去掉可能存在的 /chat/completions 或 /responses 后缀）。
+  String _modelsEndpoint(String baseUrl) {
+    var b = baseUrl.trim();
+    if (b.endsWith('/')) b = b.substring(0, b.length - 1);
+    if (b.endsWith('/chat/completions')) {
+      b = b.substring(0, b.length - '/chat/completions'.length);
+    } else if (b.endsWith('/responses')) {
+      b = b.substring(0, b.length - '/responses'.length);
+    }
+    return '$b/models';
+  }
+
   String _endpoint(String baseUrl) {
     var b = baseUrl.trim();
     if (b.endsWith('/')) b = b.substring(0, b.length - 1);
@@ -105,5 +142,6 @@ class LlmClient {
     }
   }
 }
+
 
 
