@@ -32,6 +32,13 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# flutter_local_notifications_windows 1.0.3 still includes the deprecated
+# experimental coroutine header. MSVC 14.51 treats its deprecation diagnostic
+# as an error, so silence only that upstream compatibility warning.
+if(MSVC)
+  add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+endif()
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by
