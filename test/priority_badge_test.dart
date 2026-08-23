@@ -34,8 +34,8 @@ void main() {
 
   testWidgets('列表：优先级旗标可见 + 冗余"有期限"消失', (tester) async {
     final (repo, _) = await seed();
-    await tester.pumpWidget(VerbApp(
-        repository: repo, initialLocale: const Locale('zh')));
+    await tester.pumpWidget(
+        VerbApp(repository: repo, initialLocale: const Locale('zh')));
     await tester.pumpAndSettle();
 
     // 高/中优先级任务各有一个旗标（B 无优先级，不显示）
@@ -56,13 +56,16 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final (repo, _) = await seed();
-    await tester.pumpWidget(VerbApp(
-        repository: repo, initialLocale: const Locale('zh')));
+    await tester.pumpWidget(
+        VerbApp(repository: repo, initialLocale: const Locale('zh')));
     await tester.pumpAndSettle();
 
     // 通过"看板"Tab 进入看板页面
-    await tester.ensureVisible(find.text('看板').first);
-    await tester.tap(find.text('看板').first);
+    final boardTab = find.byKey(const ValueKey('view-board'));
+    await tester.ensureVisible(boardTab);
+    expect(boardTab, findsOneWidget);
+    expect(boardTab.hitTestable(), findsOneWidget);
+    await tester.tap(boardTab);
     await tester.pumpAndSettle();
 
     // 确认真的进入了看板（而非 tap 落空）

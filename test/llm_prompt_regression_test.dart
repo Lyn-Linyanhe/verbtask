@@ -9,7 +9,9 @@ import 'package:verb_app/core/nlp/nlp_service.dart';
 // ②rrule 必须归一化为不带 RRULE: 前缀；③LLM 出错时应回退本地并标记。
 void main() {
   final cfg = LlmConfig(
-      baseUrl: 'https://sub.geiliapi.com/', apiKey: 'k', model: 'deepseek-v4-flash');
+      baseUrl: 'https://sub.geiliapi.com/',
+      apiKey: 'k',
+      model: 'deepseek-v4-flash');
 
   http.Response jsonResp(Map<String, dynamic> draft) => http.Response.bytes(
         utf8.encode(jsonEncode({
@@ -45,6 +47,27 @@ void main() {
         as Map<String, dynamic>)['messages'][0]['content'] as String;
     expect(sysMsg, contains(todayStr),
         reason: '提示词须包含今天日期，否则 LLM 无法正确推算明天/下周一/月底');
+  });
+
+  test('enhance: 提示词明确约束季度和年度重复规则', () async {
+    final bodies = <String>[];
+    final mock = MockClient((req) async {
+      bodies.add(utf8.decode(req.bodyBytes));
+      return jsonResp({
+        'title': '体检',
+        'due': null,
+        'dateOnly': true,
+        'rrule': 'FREQ=MONTHLY;INTERVAL=3',
+        'priority': 0,
+      });
+    });
+
+    await LlmClient(client: mock).enhance('每季度做一次体检', cfg);
+    final prompt = (jsonDecode(bodies.single)
+        as Map<String, dynamic>)['messages'][0]['content'] as String;
+    expect(prompt, contains('每季度'));
+    expect(prompt, contains('FREQ=MONTHLY;INTERVAL=3'));
+    expect(prompt, contains('每年'));
   });
 
   test('enhance: rrule 归一化为不带 RRULE: 前缀', () async {
@@ -95,7 +118,8 @@ void main() {
     expect(r.fallbackFromLlm, isTrue);
   });
 
-  test('enhance: 非标准 BIWEEKLY 归一化为 WEEKLY;INTERVAL=2（防 rrule 展开静默失败）', () async {
+  test('enhance: 非标准 BIWEEKLY 归一化为 WEEKLY;INTERVAL=2（防 rrule 展开静默失败）',
+      () async {
     final mock = MockClient((req) async => http.Response.bytes(
           utf8.encode(jsonEncode({
             'choices': [

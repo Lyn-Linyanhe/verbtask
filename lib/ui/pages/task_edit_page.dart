@@ -8,12 +8,14 @@ class TaskEditPage extends StatefulWidget {
   final Task task;
   final TaskService service;
   final List<TaskList> lists;
+  final DateTime? occurrence;
 
   const TaskEditPage({
     super.key,
     required this.task,
     required this.service,
     this.lists = const [],
+    this.occurrence,
   });
 
   @override
@@ -27,30 +29,42 @@ class _TaskEditPageState extends State<TaskEditPage> {
   late final TextEditingController _notes;
   late final TextEditingController _rrule;
   late final TextEditingController _reminderOffset;
+  late final FocusNode _titleFocus;
   TaskStatus _status = TaskStatus.todo;
   DueDate? _due;
   bool _dateOnly = true;
   bool _reminderEnabled = false;
+  ReminderPolicy _reminderPolicy = ReminderPolicy.inherit;
   int _priority = 0;
   String? _listId;
 
   @override
   void initState() {
     super.initState();
-    final reminder =
-        widget.task.reminders.isEmpty ? null : widget.task.reminders.first;
-    _title = TextEditingController(text: widget.task.title);
-    _notes = TextEditingController(text: widget.task.notes);
+    final override = widget.occurrence == null
+        ? null
+        : widget.task.overrideFor(widget.occurrence!);
+    final sourceReminders = override?.reminders ?? widget.task.reminders;
+    final reminder = sourceReminders.isEmpty ? null : sourceReminders.first;
+    _title = TextEditingController(text: override?.title ?? widget.task.title);
+    _titleFocus = FocusNode();
+    _notes = TextEditingController(text: override?.notes ?? widget.task.notes);
     _rrule = TextEditingController(text: widget.task.rrule ?? '');
     _reminderOffset = TextEditingController(
         text:
             reminder == null ? '30' : reminder.offsetMinutes.abs().toString());
-    _status = widget.task.status;
-    _due = widget.task.due;
-    _dateOnly = widget.task.due?.dateOnly ?? true;
-    _reminderEnabled = reminder != null;
-    _priority = widget.task.priority.clamp(0, 3);
-    _listId = widget.task.listId;
+    _status = override?.status ?? widget.task.status;
+    _due = override != null
+        ? override.due
+        : widget.occurrence == null
+            ? widget.task.due
+            : _dueForOccurrence(widget.task, widget.occurrence!);
+    _dateOnly = _due?.dateOnly ?? true;
+    _reminderPolicy = override?.reminderPolicy ?? widget.task.reminderPolicy;
+    _reminderEnabled =
+        _reminderPolicy == ReminderPolicy.enabled || sourceReminders.isNotEmpty;
+    _priority = (override?.priority ?? widget.task.priority).clamp(0, 3);
+    _listId = override == null ? widget.task.listId : override.listId;
   }
 
   @override
@@ -59,6 +73,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
     _notes.dispose();
     _rrule.dispose();
     _reminderOffset.dispose();
+    _titleFocus.dispose();
     super.dispose();
   }
 
@@ -119,34 +134,148 @@ class _TaskEditPageState extends State<TaskEditPage> {
   }
 
   List<Reminder> _reminders() {
-    if (!_reminderEnabled) return const [];
+    if (_reminderPolicy == ReminderPolicy.disabled) return const [];
+    final original = widget.occurrence == null
+        ? widget.task.reminders
+        : widget.task.overrideFor(widget.occurrence!)?.reminders ??
+            widget.task.reminders;
+    if (_reminderPolicy == ReminderPolicy.inherit && original.isEmpty) {
+      return const [];
+    }
     final parsed = int.tryParse(_reminderOffset.text.trim()) ?? 0;
     final offset = parsed == 0 ? 0 : -parsed.abs();
-    final id = widget.task.reminders.isEmpty
-        ? 'reminder-${widget.task.id}'
-        : widget.task.reminders.first.id;
+    final id =
+        original.isEmpty ? 'reminder-${widget.task.id}' : original.first.id;
     return [Reminder(id: id, offsetMinutes: offset)];
   }
 
   Future<void> _save() async {
     final title = _title.text.trim();
-    if (title.isEmpty) return;
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).titleRequired)),
+      );
+      _titleFocus.requestFocus();
+      return;
+    }
     final rr = _rrule.text.trim();
     if (_reminderEnabled) {
       await AppNotifications.ensureNotificationPermission();
     }
-    await widget.service.edit(
-      widget.task,
-      title: title,
-      notes: _notes.text.trim(),
-      listId: _listId,
-      due: _due,
-      status: _status,
-      rrule: rr.isEmpty ? null : rr,
-      reminders: _reminders(),
-      priority: _priority,
-    );
+    if (!mounted) return;
+    if (widget.task.isRepeating && rr.isNotEmpty) {
+      final occurrence = widget.occurrence ?? widget.task.due?.value;
+      if (occurrence == null) return;
+      final scope = await _chooseRecurrenceScope(
+        defaultScope: widget.occurrence == null
+            ? RecurrenceEditScope.wholeSeries
+            : RecurrenceEditScope.occurrence,
+      );
+      if (scope == null || !mounted) return;
+      if (scope != RecurrenceEditScope.occurrence && _due == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(AppLocalizations.of(context).recurringDueRequired)),
+        );
+        return;
+      }
+      await widget.service.editRecurring(
+        widget.task,
+        scope: scope,
+        occurrence: occurrence,
+        title: title,
+        notes: _notes.text.trim(),
+        listId: _listId,
+        due: _due,
+        status: _status,
+        rrule: rr,
+        reminders: _reminders(),
+        reminderPolicy: _reminderPolicy,
+        priority: _priority,
+      );
+    } else {
+      if (rr.isNotEmpty && _due == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(AppLocalizations.of(context).recurringDueRequired)),
+        );
+        return;
+      }
+      await widget.service.edit(
+        widget.task,
+        title: title,
+        notes: _notes.text.trim(),
+        listId: _listId,
+        due: _due,
+        status: _status,
+        rrule: rr.isEmpty ? null : rr,
+        reminders: _reminders(),
+        reminderPolicy: _reminderPolicy,
+        priority: _priority,
+      );
+    }
     if (mounted) Navigator.pop(context, true);
+  }
+
+  Future<RecurrenceEditScope?> _chooseRecurrenceScope({
+    required RecurrenceEditScope defaultScope,
+  }) {
+    var selected = defaultScope;
+    return showDialog<RecurrenceEditScope>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(AppLocalizations.of(context).editRecurringTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioGroup<RecurrenceEditScope>(
+                groupValue: selected,
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => selected = value);
+                },
+                child: Column(
+                  children: RecurrenceEditScope.values.map((scope) {
+                    final l = AppLocalizations.of(context);
+                    final label = switch (scope) {
+                      RecurrenceEditScope.occurrence => l.editThisOccurrence,
+                      RecurrenceEditScope.thisAndFuture => l.editThisAndFuture,
+                      RecurrenceEditScope.wholeSeries => l.editWholeSeries,
+                    };
+                    return RadioListTile<RecurrenceEditScope>(
+                      value: scope,
+                      title: Text(label),
+                      contentPadding: EdgeInsets.zero,
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(AppLocalizations.of(context).cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, selected),
+              child: Text(AppLocalizations.of(context).confirm),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  DueDate _dueForOccurrence(Task task, DateTime occurrence) {
+    final dateOnly = task.due?.dateOnly ?? false;
+    return dateOnly
+        ? DueDate(
+            DateTime.utc(occurrence.year, occurrence.month, occurrence.day),
+            dateOnly: true,
+          )
+        : DueDate(occurrence);
   }
 
   String _statusLabel(TaskStatus s, AppLocalizations l) => switch (s) {
@@ -183,8 +312,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: FilledButton(
             onPressed: _save,
-            style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(52)),
+            style:
+                FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
             child: Text(l.save),
           ),
         ),
@@ -201,6 +330,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                   _SectionLabel(l.basicInformation),
                   const SizedBox(height: 10),
                   TextField(
+                      focusNode: _titleFocus,
                       controller: _title,
                       decoration: InputDecoration(labelText: l.titleField)),
                   const SizedBox(height: 14),
@@ -297,12 +427,21 @@ class _TaskEditPageState extends State<TaskEditPage> {
                     key: const ValueKey('task-reminder-enabled'),
                     contentPadding: EdgeInsets.zero,
                     title: Text(l.reminderEnabled),
-                    subtitle: Text(_reminderEnabled ? l.reminder : l.noReminder,
+                    subtitle: Text(
+                        _reminderPolicy == ReminderPolicy.inherit
+                            ? l.useDefaultReminder
+                            : _reminderEnabled
+                                ? l.reminder
+                                : l.noReminder,
                         style: TextStyle(
                             color: scheme.onSurfaceVariant, fontSize: 12)),
                     value: _reminderEnabled,
-                    onChanged: (value) =>
-                        setState(() => _reminderEnabled = value),
+                    onChanged: (value) => setState(() {
+                      _reminderEnabled = value;
+                      _reminderPolicy = value
+                          ? ReminderPolicy.enabled
+                          : ReminderPolicy.disabled;
+                    }),
                   ),
                   if (_reminderEnabled)
                     TextField(

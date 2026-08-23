@@ -5,6 +5,24 @@
 #include "flutter_window.h"
 #include "utils.h"
 
+namespace {
+std::wstring FlutterDataPath() {
+  std::wstring buffer(MAX_PATH, L'\0');
+  DWORD length = 0;
+  while (true) {
+    length = ::GetModuleFileNameW(nullptr, buffer.data(),
+                                  static_cast<DWORD>(buffer.size()));
+    if (length == 0) return L"data";
+    if (length < buffer.size() - 1) break;
+    buffer.resize(buffer.size() * 2);
+  }
+  buffer.resize(length);
+  const auto separator = buffer.find_last_of(L"\\/");
+  if (separator == std::wstring::npos) return L"data";
+  return buffer.substr(0, separator) + L"\\data";
+}
+}  // namespace
+
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
   // Attach to console when present (e.g., 'flutter run') or create a
@@ -17,7 +35,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   // plugins.
   ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
-  flutter::DartProject project(L"data");
+  // Run/RunOnce may launch the executable with an unrelated current working
+  // directory. Resolve Flutter's bundled data beside the executable instead.
+  flutter::DartProject project(FlutterDataPath());
 
   std::vector<std::string> command_line_arguments =
       GetCommandLineArguments();
@@ -27,7 +47,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(900, 600);
-  if (!window.Create(L"verb_app", origin, size)) {
+  if (!window.Create(L"VerbTask", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

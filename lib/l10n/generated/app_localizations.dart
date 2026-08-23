@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Verb Task'**
+  /// **'Reminder Notes'**
   String get appTitle;
 
   /// No description provided for @inbox.
@@ -149,7 +149,7 @@ abstract class AppLocalizations {
   /// No description provided for @addTask.
   ///
   /// In en, this message translates to:
-  /// **'Add a task…'**
+  /// **'Capture a note…'**
   String get addTask;
 
   /// No description provided for @settings.
@@ -179,7 +179,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchTasks.
   ///
   /// In en, this message translates to:
-  /// **'Search tasks'**
+  /// **'Search notes and reminders'**
   String get searchTasks;
 
   /// No description provided for @filter.
@@ -227,7 +227,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchNoResultTitle.
   ///
   /// In en, this message translates to:
-  /// **'No matching tasks'**
+  /// **'No matching items'**
   String get searchNoResultTitle;
 
   /// No description provided for @manageLists.
@@ -275,7 +275,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteListConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Tasks in this list will move to Inbox.'**
+  /// **'Items in this list will move to Inbox.'**
   String get deleteListConfirm;
 
   /// No description provided for @cancel.
@@ -338,6 +338,18 @@ abstract class AppLocalizations {
   /// **'Unrecognized'**
   String get unrecognized;
 
+  /// No description provided for @unrecognizedInput.
+  ///
+  /// In en, this message translates to:
+  /// **'No recordable item was recognized'**
+  String get unrecognizedInput;
+
+  /// No description provided for @reminderNeedsDue.
+  ///
+  /// In en, this message translates to:
+  /// **'No due date was set, so the reminder cannot be scheduled; this will be saved as a regular item'**
+  String get reminderNeedsDue;
+
   /// No description provided for @none.
   ///
   /// In en, this message translates to:
@@ -377,61 +389,61 @@ abstract class AppLocalizations {
   /// No description provided for @emptyInboxSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Capture something to do and finish it here'**
+  /// **'Capture something to remember and come back to it later'**
   String get emptyInboxSubtitle;
 
   /// No description provided for @emptyInboxSubtitleHint.
   ///
   /// In en, this message translates to:
-  /// **'Type naturally above, e.g. 明天下午3点 交周报 — give it a try'**
+  /// **'Try: remind me tomorrow at 3 PM to submit the weekly report'**
   String get emptyInboxSubtitleHint;
 
   /// No description provided for @emptyDoneTitle.
   ///
   /// In en, this message translates to:
-  /// **'No completed tasks yet'**
+  /// **'No completed items yet'**
   String get emptyDoneTitle;
 
   /// No description provided for @emptyDoneSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Completed tasks will appear here'**
+  /// **'Completed items will appear here'**
   String get emptyDoneSubtitle;
 
   /// No description provided for @emptyListTitle.
   ///
   /// In en, this message translates to:
-  /// **'No list tasks yet'**
+  /// **'This list is empty'**
   String get emptyListTitle;
 
   /// No description provided for @emptyListSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Organize tasks into lists'**
+  /// **'Group items here to find them later'**
   String get emptyListSubtitle;
 
   /// No description provided for @emptyTodayTitle.
   ///
   /// In en, this message translates to:
-  /// **'Nothing due today'**
+  /// **'Nothing scheduled today'**
   String get emptyTodayTitle;
 
   /// No description provided for @emptyTodaySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Tasks due today will appear here'**
+  /// **'Items due today will appear here'**
   String get emptyTodaySubtitle;
 
   /// No description provided for @emptyPlannedTitle.
   ///
   /// In en, this message translates to:
-  /// **'No planned tasks yet'**
+  /// **'No scheduled items yet'**
   String get emptyPlannedTitle;
 
   /// No description provided for @emptyPlannedSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Add a due date to see a task here'**
+  /// **'Set a date to see an item here'**
   String get emptyPlannedSubtitle;
 
   /// No description provided for @emptyBoardTitle.
@@ -443,7 +455,7 @@ abstract class AppLocalizations {
   /// No description provided for @emptyBoardSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Tasks will be grouped by status here'**
+  /// **'Items will be grouped by status here'**
   String get emptyBoardSubtitle;
 
   /// No description provided for @dateMonthDay.
@@ -509,7 +521,7 @@ abstract class AppLocalizations {
   /// No description provided for @reminderEnabled.
   ///
   /// In en, this message translates to:
-  /// **'Remind me for this task'**
+  /// **'Remind me about this item'**
   String get reminderEnabled;
 
   /// No description provided for @reminderAdvanceMinutes.
@@ -569,7 +581,7 @@ abstract class AppLocalizations {
   /// No description provided for @editTask.
   ///
   /// In en, this message translates to:
-  /// **'Edit task'**
+  /// **'Edit item'**
   String get editTask;
 
   /// No description provided for @basicInformation.
@@ -583,6 +595,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Title'**
   String get titleField;
+
+  /// No description provided for @titleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A title is required'**
+  String get titleRequired;
 
   /// No description provided for @notesField.
   ///
@@ -614,6 +632,36 @@ abstract class AppLocalizations {
   /// **'FREQ=DAILY'**
   String get repeatRuleHint;
 
+  /// No description provided for @editRecurringTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit recurring item'**
+  String get editRecurringTitle;
+
+  /// No description provided for @editThisOccurrence.
+  ///
+  /// In en, this message translates to:
+  /// **'This occurrence only'**
+  String get editThisOccurrence;
+
+  /// No description provided for @editThisAndFuture.
+  ///
+  /// In en, this message translates to:
+  /// **'This and following'**
+  String get editThisAndFuture;
+
+  /// No description provided for @editWholeSeries.
+  ///
+  /// In en, this message translates to:
+  /// **'Entire series'**
+  String get editWholeSeries;
+
+  /// No description provided for @recurringDueRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A recurring item needs a due date, or you can clear its repeat rule.'**
+  String get recurringDueRequired;
+
   /// No description provided for @save.
   ///
   /// In en, this message translates to:
@@ -635,7 +683,7 @@ abstract class AppLocalizations {
   /// No description provided for @importedTasks.
   ///
   /// In en, this message translates to:
-  /// **'Imported {count} tasks'**
+  /// **'Imported {count} items'**
   String importedTasks(Object count);
 
   /// No description provided for @appearance.
@@ -671,7 +719,7 @@ abstract class AppLocalizations {
   /// No description provided for @llmSendTaskTextDescription.
   ///
   /// In en, this message translates to:
-  /// **'When enabled, task text is sent to the service you provide'**
+  /// **'When enabled, captured text is sent to the service you provide'**
   String get llmSendTaskTextDescription;
 
   /// No description provided for @llmOfflineParsingDescription.
@@ -683,13 +731,13 @@ abstract class AppLocalizations {
   /// No description provided for @llmDataNoticeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Task text will be sent to an external service'**
+  /// **'Captured text will be sent to an external service'**
   String get llmDataNoticeTitle;
 
   /// No description provided for @llmDataNoticeBody.
   ///
   /// In en, this message translates to:
-  /// **'LLM-enhanced parsing is enabled. After you confirm, the current text will be sent to the OpenAI-compatible endpoint you entered. VerbTask does not receive the data.'**
+  /// **'LLM-enhanced parsing is enabled. After you confirm, the current captured text will be sent to the OpenAI-compatible endpoint you entered. VerbTask does not receive the data.'**
   String get llmDataNoticeBody;
 
   /// No description provided for @llmFallbackNotice.
@@ -745,6 +793,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Auto-sync interval (minutes)'**
   String get autoSyncIntervalMinutes;
+
+  /// No description provided for @syncNotRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Not synced yet'**
+  String get syncNotRun;
+
+  /// No description provided for @syncSucceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Last sync succeeded'**
+  String get syncSucceeded;
+
+  /// No description provided for @syncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync failed'**
+  String get syncFailed;
 
   /// No description provided for @useDefaultReminder.
   ///
@@ -830,6 +896,12 @@ abstract class AppLocalizations {
   /// **'Launch at startup'**
   String get launchAtStartup;
 
+  /// No description provided for @autostartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change startup setting. Check Windows permissions.'**
+  String get autostartFailed;
+
   /// No description provided for @emptyRecycleBinTitle.
   ///
   /// In en, this message translates to:
@@ -839,7 +911,7 @@ abstract class AppLocalizations {
   /// No description provided for @emptyRecycleBinSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Deleted tasks appear here and can be restored'**
+  /// **'Deleted items appear here and can be restored'**
   String get emptyRecycleBinSubtitle;
 
   /// No description provided for @restore.
@@ -881,13 +953,13 @@ abstract class AppLocalizations {
   /// No description provided for @quickNote.
   ///
   /// In en, this message translates to:
-  /// **'Quick note'**
+  /// **'Floating note'**
   String get quickNote;
 
   /// No description provided for @quickNoteHint.
   ///
   /// In en, this message translates to:
-  /// **'Type a task, press Enter to save…'**
+  /// **'Type a note or reminder, press Enter to save…'**
   String get quickNoteHint;
 
   /// No description provided for @restoreWindow.

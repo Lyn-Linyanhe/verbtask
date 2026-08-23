@@ -128,7 +128,7 @@ void main() {
     // 设置页出现：语言 / LLM 增强解析
     expect(find.text('LLM 增强解析'), findsOneWidget);
     // 点开 LLM 开关
-    await tester.tap(find.text('开启后任务文本将发送到你填写的服务').first);
+    await tester.tap(find.text('开启后，录入文本将发送到你填写的服务').first);
     await tester.pumpAndSettle();
 
     // 找三个 LLM 输入框(Base URL / API Key / 模型) —— 用 InputDecoration label
@@ -147,4 +147,3 @@ class RecycleBinPageShell extends StatelessWidget {
     return RecycleBinPage(service: service);
   }
 }
-

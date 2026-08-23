@@ -32,7 +32,12 @@ class SystemProxy {
 
   static String? _envProxy() {
     final e = Platform.environment;
-    for (final k in ['HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy']) {
+    for (final k in [
+      'HTTPS_PROXY',
+      'https_proxy',
+      'HTTP_PROXY',
+      'http_proxy'
+    ]) {
       final v = e[k];
       if (v != null && v.trim().isNotEmpty) return _normalize(v.trim());
     }
@@ -41,13 +46,14 @@ class SystemProxy {
 
   static String? _registryProxy() {
     try {
-      final key = r'HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings';
+      final key =
+          r'HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings';
       // ProxyEnable=1 才启用
-      final en = Process.runSync(
-        'reg', ['query', key, '/v', 'ProxyEnable']);
+      final en = Process.runSync('reg', ['query', key, '/v', 'ProxyEnable']);
       if (!en.stdout.toString().contains('0x1')) return null;
       final sv = Process.runSync('reg', ['query', key, '/v', 'ProxyServer']);
-      final m = RegExp(r'ProxyServer\s+REG_SZ\s+(\S+)').firstMatch(sv.stdout.toString());
+      final m = RegExp(r'ProxyServer\s+REG_SZ\s+(\S+)')
+          .firstMatch(sv.stdout.toString());
       return m == null ? null : _normalize(m.group(1)!);
     } catch (_) {
       return null;
@@ -68,8 +74,11 @@ class SystemProxy {
       return null;
     }
     var s = raw.trim();
-    if (s.toLowerCase().startsWith('http://')) { s = s.substring(7); }
-    else if (s.toLowerCase().startsWith('https://')) { s = s.substring(8); }
+    if (s.toLowerCase().startsWith('http://')) {
+      s = s.substring(7);
+    } else if (s.toLowerCase().startsWith('https://')) {
+      s = s.substring(8);
+    }
     return s.isEmpty ? null : s;
   }
 }

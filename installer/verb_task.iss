@@ -1,9 +1,9 @@
 ; VerbTask Windows 安装器
 ; 所有路径均为相对本脚本目录(installer/)解析，保证克隆后可移植编译
 #define MyAppName "VerbTask"
-#define MyAppVersion "0.4.10"
+#define MyAppVersion "0.4.12"
 #define MyAppPublisher "VerbTask contributors"
-#define MyAppExeName "verb_app.exe"
+#define MyAppExeName "verb_task.exe"
 
 [Setup]
 AppId={{B5C1D2E3-4F80-4A9B-8C6D-3E7F5A1B9C42}
@@ -32,7 +32,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\build\windows\x64\runner\Release\verb_app.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\build\windows\x64\runner\Release\verb_task.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\build\windows\x64\runner\Release\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\build\windows\x64\runner\Release\native_assets.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs

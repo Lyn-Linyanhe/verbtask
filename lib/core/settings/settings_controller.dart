@@ -36,6 +36,7 @@ class SettingsController extends ChangeNotifier {
     settings.llmEnabled = v;
     _save();
   }
+
   String get llmModel => settings.llmModel;
   set llmModel(String v) {
     settings.llmModel = v;
@@ -44,8 +45,41 @@ class SettingsController extends ChangeNotifier {
 
   int get syncAutoIntervalMin => settings.syncAutoIntervalMin;
   set syncAutoIntervalMin(int v) {
-    settings.syncAutoIntervalMin = v;
+    settings.syncAutoIntervalMin = v.clamp(15, 24 * 60);
     _save();
+  }
+
+  String get syncCursor => settings.syncCursor;
+
+  String get syncLastStatus => settings.syncLastStatus;
+  String get syncLastError => settings.syncLastError;
+  String get syncLastAt => settings.syncLastAt;
+
+  Future<void> markSyncStarted() async {
+    settings
+      ..syncLastStatus = 'syncing'
+      ..syncLastError = '';
+    await settings.save();
+    notifyListeners();
+  }
+
+  Future<void> markSyncSuccess(String cursor) async {
+    settings
+      ..syncCursor = cursor
+      ..syncLastStatus = 'success'
+      ..syncLastError = ''
+      ..syncLastAt = DateTime.now().toUtc().toIso8601String();
+    await settings.save();
+    notifyListeners();
+  }
+
+  Future<void> markSyncFailure(Object error) async {
+    settings
+      ..syncLastStatus = 'failed'
+      ..syncLastError = error.toString()
+      ..syncLastAt = DateTime.now().toUtc().toIso8601String();
+    await settings.save();
+    notifyListeners();
   }
 
   bool get notifyDefaultReminderEnabled =>
@@ -146,4 +180,3 @@ class SettingsController extends ChangeNotifier {
     notifyListeners();
   }
 }
-

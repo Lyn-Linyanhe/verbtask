@@ -5,7 +5,7 @@ import '../../app/window_control.dart';
 /// 悬浮速记页：在小窗里快速连续记录任务，回车保存不清空、可继续输入。
 /// 顶部把手可拖动窗口；右上角返回恢复正常窗口。
 class QuickNotePage extends StatefulWidget {
-  final Future<void> Function(String text) onAdd; // 保存回调（复用 HomePage._quickAdd）
+  final Future<bool> Function(String text) onAdd;
   final bool restoreAlwaysOnTop; // 退出时是否恢复置顶
   const QuickNotePage({
     super.key,
@@ -29,9 +29,9 @@ class _QuickNotePageState extends State<QuickNotePage> {
   Future<void> _save(String text) async {
     final v = text.trim();
     if (v.isEmpty) return;
-    await widget.onAdd(v);
+    final saved = await widget.onAdd(v);
     if (!mounted) return;
-    _input.clear(); // 连记：保存后清空继续输入
+    if (saved) _input.clear(); // 只有真正写入任务后才清空原文
   }
 
   Future<void> _close() async {
@@ -56,7 +56,8 @@ class _QuickNotePageState extends State<QuickNotePage> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 4, 4),
                   child: Row(
                     children: [
-                      Icon(Icons.drag_indicator, size: 18, color: scheme.outline),
+                      Icon(Icons.drag_indicator,
+                          size: 18, color: scheme.outline),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -69,7 +70,8 @@ class _QuickNotePageState extends State<QuickNotePage> {
                       IconButton(
                         tooltip: l.restoreWindow,
                         onPressed: _close,
-                        icon: const Icon(Icons.fullscreen_exit_rounded, size: 20),
+                        icon:
+                            const Icon(Icons.fullscreen_exit_rounded, size: 20),
                       ),
                     ],
                   ),
@@ -99,4 +101,3 @@ class _QuickNotePageState extends State<QuickNotePage> {
     );
   }
 }
-

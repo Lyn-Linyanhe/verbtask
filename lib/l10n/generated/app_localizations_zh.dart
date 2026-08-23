@@ -9,7 +9,7 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => '任务清单';
+  String get appTitle => '提醒记事';
 
   @override
   String get inbox => '收件箱';
@@ -33,7 +33,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get done => '已完成';
 
   @override
-  String get addTask => '添加任务…';
+  String get addTask => '记下一件事…';
 
   @override
   String get settings => '设置';
@@ -48,7 +48,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get search => '搜索';
 
   @override
-  String get searchTasks => '搜索任务';
+  String get searchTasks => '搜索事项';
 
   @override
   String get filter => '筛选';
@@ -72,7 +72,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchNoResultSubtitle => '试试更换关键词，或清除搜索看看全部';
 
   @override
-  String get searchNoResultTitle => '未找到相关任务';
+  String get searchNoResultTitle => '未找到相关事项';
 
   @override
   String get manageLists => '管理清单';
@@ -96,7 +96,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get noLists => '还没有清单';
 
   @override
-  String get deleteListConfirm => '删除清单后，其中的任务会移回收件箱。';
+  String get deleteListConfirm => '删除清单后，其中的事项会移回收件箱。';
 
   @override
   String get cancel => '取消';
@@ -143,6 +143,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get unrecognized => '未识别';
 
   @override
+  String get unrecognizedInput => '没有识别到可记录的事项';
+
+  @override
+  String get reminderNeedsDue => '没有截止日期，提醒无法安排；将按普通事项保存';
+
+  @override
   String get none => '无';
 
   @override
@@ -161,40 +167,40 @@ class AppLocalizationsZh extends AppLocalizations {
   String get emptyInboxTitle => '收件箱是空的';
 
   @override
-  String get emptyInboxSubtitle => '把要做的事记下来，随手完成';
+  String get emptyInboxSubtitle => '把要记住的事写下来，之后回来查看';
 
   @override
-  String get emptyInboxSubtitleHint => '在上方输入自然语言试试，比如：明天下午3点 交周报';
+  String get emptyInboxSubtitleHint => '试试：明天下午3点提醒我交周报';
 
   @override
-  String get emptyDoneTitle => '还没有已完成的任务';
+  String get emptyDoneTitle => '还没有已完成的事项';
 
   @override
-  String get emptyDoneSubtitle => '勾选任务即可在这里看到';
+  String get emptyDoneSubtitle => '完成的事项会显示在这里';
 
   @override
-  String get emptyListTitle => '还没有清单任务';
+  String get emptyListTitle => '这个清单还没有内容';
 
   @override
-  String get emptyListSubtitle => '把任务归入清单，分门别类';
+  String get emptyListSubtitle => '把事项归入清单，方便查找';
 
   @override
-  String get emptyTodayTitle => '今天没有待办';
+  String get emptyTodayTitle => '今天没有安排';
 
   @override
-  String get emptyTodaySubtitle => '今天要做的任务会显示在这里';
+  String get emptyTodaySubtitle => '今天到期的事项会显示在这里';
 
   @override
-  String get emptyPlannedTitle => '还没有计划任务';
+  String get emptyPlannedTitle => '还没有安排好的事项';
 
   @override
-  String get emptyPlannedSubtitle => '给任务设置截止日期后，它会出现在这里';
+  String get emptyPlannedSubtitle => '给事项设置日期后，它会出现在这里';
 
   @override
   String get emptyBoardTitle => '看板是空的';
 
   @override
-  String get emptyBoardSubtitle => '任务状态会按列显示在这里';
+  String get emptyBoardSubtitle => '事项状态会按列显示在这里';
 
   @override
   String dateMonthDay(Object day, Object month) {
@@ -229,7 +235,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reminder => '提醒';
 
   @override
-  String get reminderEnabled => '为此任务提醒';
+  String get reminderEnabled => '为此事项设置提醒';
 
   @override
   String get reminderAdvanceMinutes => '提前分钟数';
@@ -259,13 +265,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get parseLlm => 'LLM';
 
   @override
-  String get editTask => '编辑任务';
+  String get editTask => '编辑事项';
 
   @override
   String get basicInformation => '基本信息';
 
   @override
   String get titleField => '标题';
+
+  @override
+  String get titleRequired => '标题不能为空';
 
   @override
   String get notesField => '备注';
@@ -283,6 +292,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get repeatRuleHint => 'FREQ=DAILY';
 
   @override
+  String get editRecurringTitle => '编辑重复事项';
+
+  @override
+  String get editThisOccurrence => '仅此次';
+
+  @override
+  String get editThisAndFuture => '此次及以后';
+
+  @override
+  String get editWholeSeries => '整个系列';
+
+  @override
+  String get recurringDueRequired => '重复事项必须设置截止日期，或清空重复规则';
+
+  @override
   String get save => '保存';
 
   @override
@@ -295,7 +319,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String importedTasks(Object count) {
-    return '已导入 $count 条任务';
+    return '已导入 $count 条事项';
   }
 
   @override
@@ -314,17 +338,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get llmEnhancedParsing => 'LLM 增强解析';
 
   @override
-  String get llmSendTaskTextDescription => '开启后任务文本将发送到你填写的服务';
+  String get llmSendTaskTextDescription => '开启后，录入文本将发送到你填写的服务';
 
   @override
   String get llmOfflineParsingDescription => '默认关闭；本地离线解析始终可用';
 
   @override
-  String get llmDataNoticeTitle => '任务文本将发送到外部服务';
+  String get llmDataNoticeTitle => '录入文本将发送到外部服务';
 
   @override
   String get llmDataNoticeBody =>
-      '你已开启 LLM 增强解析。确认后，当前文本会发送到你填写的 OpenAI 兼容接口。数据不会发送到 VerbTask 自己的服务器。';
+      '你已开启 LLM 增强解析。确认后，当前录入文本会发送到你填写的 OpenAI 兼容接口。数据不会发送到 VerbTask 自己的服务器。';
 
   @override
   String get llmFallbackNotice => 'LLM 不可用，已回退到本地解析';
@@ -352,6 +376,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get autoSyncIntervalMinutes => '自动同步间隔（分钟）';
+
+  @override
+  String get syncNotRun => '尚未同步';
+
+  @override
+  String get syncSucceeded => '最近一次同步成功';
+
+  @override
+  String get syncFailed => '同步失败';
 
   @override
   String get useDefaultReminder => '使用默认提醒';
@@ -396,10 +429,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get launchAtStartup => '开机自启';
 
   @override
+  String get autostartFailed => '开机自启设置失败，请检查系统权限';
+
+  @override
   String get emptyRecycleBinTitle => '回收站是空的';
 
   @override
-  String get emptyRecycleBinSubtitle => '删除的任务会在这里，可恢复';
+  String get emptyRecycleBinSubtitle => '删除的事项会在这里，可恢复';
 
   @override
   String get restore => '恢复';
@@ -420,10 +456,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get alwaysOnTop => '窗口置顶';
 
   @override
-  String get quickNote => '悬浮速记';
+  String get quickNote => '悬浮记事';
 
   @override
-  String get quickNoteHint => '输入任务，回车保存…';
+  String get quickNoteHint => '输入一件事，回车保存…';
 
   @override
   String get restoreWindow => '恢复正常窗口';

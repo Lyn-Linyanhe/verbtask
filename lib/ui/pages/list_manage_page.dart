@@ -91,22 +91,25 @@ class _ListManagePageState extends State<ListManagePage> {
         ],
       ),
       body: _lists.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.list_alt_rounded,
-                      size: 48, color: scheme.onSurfaceVariant),
-                  const SizedBox(height: 14),
-                  Text(l.noLists,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: () => _editList(),
-                    icon: const Icon(Icons.add_rounded),
-                    label: Text(l.newList),
-                  ),
-                ],
+          ? SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.list_alt_rounded,
+                        size: 48, color: scheme.onSurfaceVariant),
+                    const SizedBox(height: 14),
+                    Text(l.noLists,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => _editList(),
+                      icon: const Icon(Icons.add_rounded),
+                      label: Text(l.newList),
+                    ),
+                  ],
+                ),
               ),
             )
           : ListView.separated(
@@ -183,6 +186,7 @@ class _ListNameDialogState extends State<_ListNameDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      scrollable: true,
       title: Text(widget.title),
       content: TextField(
         controller: _name,

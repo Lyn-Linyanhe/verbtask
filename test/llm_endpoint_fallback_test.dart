@@ -7,7 +7,10 @@ import 'package:verb_app/core/nlp/llm_client.dart';
 // 真实场景：geiliapi 中转站根路径 /chat/completions 返回 HTML，
 // 正确端点是 /v1/chat/completions。enhance 应自动探测并重试。
 void main() {
-  final cfg = LlmConfig(baseUrl: 'https://sub.geiliapi.com/', apiKey: 'k', model: 'deepseek-v4-flash');
+  final cfg = LlmConfig(
+      baseUrl: 'https://sub.geiliapi.com/',
+      apiKey: 'k',
+      model: 'deepseek-v4-flash');
 
   test('enhance: 首端点返回 HTML 时自动 fallback 到 /v1/chat/completions', () async {
     final urls = <String>[];
@@ -15,7 +18,8 @@ void main() {
       urls.add(req.url.toString());
       if (req.url.path == '/chat/completions') {
         // 网关对未知路径返回 HTML 页面
-        return http.Response('<!doctype html><html><body>Gateway</body></html>', 200,
+        return http.Response(
+            '<!doctype html><html><body>Gateway</body></html>', 200,
             headers: {'content-type': 'text/html'});
       }
       return http.Response.bytes(
@@ -23,7 +27,8 @@ void main() {
           'choices': [
             {
               'message': {
-                'content': '{"title":"交周报","due":"2026-08-22T07:00:00.000Z","dateOnly":false,"rrule":null,"priority":2}'
+                'content':
+                    '{"title":"交周报","due":"2026-08-22T07:00:00.000Z","dateOnly":false,"rrule":null,"priority":2}'
               }
             }
           ]
@@ -41,8 +46,9 @@ void main() {
   });
 
   test('enhance: 两个端点都非 JSON 时抛 LlmUnavailable', () async {
-    final mock = MockClient((req) async =>
-        http.Response('<!doctype html>...', 200, headers: {'content-type': 'text/html'}));
+    final mock = MockClient((req) async => http.Response(
+        '<!doctype html>...', 200,
+        headers: {'content-type': 'text/html'}));
     final client = LlmClient(client: mock);
     await expectLater(
       client.enhance('x', cfg),
@@ -53,15 +59,21 @@ void main() {
   retryTests();
 }
 
-
-
 void retryTests() {
   // 单端点配置：baseUrl 已含 /v1 → 只有一个候选，便于精确计数重试次数
-  final cfg = LlmConfig(baseUrl: 'https://sub.geiliapi.com/v1', apiKey: 'k', model: 'deepseek-v4-flash');
+  final cfg = LlmConfig(
+      baseUrl: 'https://sub.geiliapi.com/v1',
+      apiKey: 'k',
+      model: 'deepseek-v4-flash');
   http.Response jsonResp() => http.Response.bytes(
         utf8.encode(jsonEncode({
           'choices': [
-            {'message': {'content': '{"title":"交周报","due":"2026-08-22T07:00:00.000Z","dateOnly":false,"rrule":null,"priority":2}'}}
+            {
+              'message': {
+                'content':
+                    '{"title":"交周报","due":"2026-08-22T07:00:00.000Z","dateOnly":false,"rrule":null,"priority":2}'
+              }
+            }
           ]
         })),
         200,
@@ -72,7 +84,10 @@ void retryTests() {
     var calls = 0;
     final mock = MockClient((req) async {
       calls++;
-      if (calls == 1) return http.Response('bad gateway', 502, headers: {'content-type': 'text/html'});
+      if (calls == 1) {
+        return http.Response('bad gateway', 502,
+            headers: {'content-type': 'text/html'});
+      }
       return jsonResp();
     });
     final d = await LlmClient(client: mock).enhance('明天下午3点 交周报 高', cfg);
@@ -84,7 +99,9 @@ void retryTests() {
     var calls = 0;
     final mock = MockClient((req) async {
       calls++;
-      if (calls == 1) throw http.ClientException('timeout', Uri.parse(req.url.toString()));
+      if (calls == 1) {
+        throw http.ClientException('timeout', Uri.parse(req.url.toString()));
+      }
       return jsonResp();
     });
     final d = await LlmClient(client: mock).enhance('明天下午3点 交周报 高', cfg);
@@ -96,7 +113,8 @@ void retryTests() {
     var calls = 0;
     final mock = MockClient((req) async {
       calls++;
-      return http.Response('{"error":"invalid key"}', 401, headers: {'content-type': 'application/json'});
+      return http.Response('{"error":"invalid key"}', 401,
+          headers: {'content-type': 'application/json'});
     });
     await expectLater(
       LlmClient(client: mock).enhance('x', cfg),

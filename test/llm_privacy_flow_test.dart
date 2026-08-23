@@ -12,11 +12,15 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     final dir = Directory.systemTemp.createTempSync('verb_llmflow_');
-    addTearDown(() { try { dir.deleteSync(recursive: true); } catch (_) {} });
+    addTearDown(() {
+      try {
+        dir.deleteSync(recursive: true);
+      } catch (_) {}
+    });
 
     final repo = InMemoryRepository();
-    final controller = SettingsController(
-      LocalSettings(File('${dir.path}/s.json')), repo);
+    final controller =
+        SettingsController(LocalSettings(File('${dir.path}/s.json')), repo);
     controller.llmEnabled = 1;
     controller.llmBaseUrl = 'https://api.deepseek.com';
     controller.llmKey = 'sk-test';
@@ -37,7 +41,7 @@ void main() {
 
     // 真人第一次应看到「数据出本机」知情提示（隐私关键路径）
     expect(find.byType(AlertDialog), findsOneWidget);
-    expect(find.text('任务文本将发送到外部服务'), findsOneWidget);
+    expect(find.text('录入文本将发送到外部服务'), findsOneWidget);
 
     // 真人选择「取消」→ 不发网络请求，走本地解析，随后弹出解析确认
     await tester.tap(find.text('取消'));
@@ -51,5 +55,3 @@ void main() {
     expect(tasks.any((t) => t.title.contains('交报告')), isTrue);
   });
 }
-
-

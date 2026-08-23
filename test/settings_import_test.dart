@@ -53,7 +53,9 @@ void main() {
       expect(destTasks, hasLength(1));
       expect(destTasks.single.title, '导入过来的任务');
     } finally {
-      try { dir.deleteSync(recursive: true); } catch (_) {}
+      try {
+        dir.deleteSync(recursive: true);
+      } catch (_) {}
     }
   });
 }

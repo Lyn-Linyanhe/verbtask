@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.verbapp" "\0"
-            VALUE "FileDescription", "verb_app" "\0"
+            VALUE "FileDescription", "VerbTask" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "verb_app" "\0"
+            VALUE "InternalName", "verb_task" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.verbapp. All rights reserved." "\0"
-            VALUE "OriginalFilename", "verb_app.exe" "\0"
-            VALUE "ProductName", "verb_app" "\0"
+            VALUE "OriginalFilename", "verb_task.exe" "\0"
+            VALUE "ProductName", "VerbTask" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

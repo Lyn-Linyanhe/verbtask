@@ -11,6 +11,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.text('Inbox'), findsOneWidget);
+    expect(find.text('Verb Task'), findsNothing);
     expect(find.text('Inbox is empty'), findsOneWidget);
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Planned'), findsOneWidget);
@@ -28,5 +29,6 @@ void main() {
     await tester.tap(find.text('中文'));
     await tester.pumpAndSettle();
     expect(find.text('收件箱'), findsOneWidget);
+    expect(find.text('提醒记事'), findsOneWidget);
   });
 }

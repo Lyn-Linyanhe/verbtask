@@ -9,10 +9,17 @@
 
 ## 编译
 
-在仓库根目录执行：
+在仓库根目录执行。若 `ISCC.exe` 已加入 PATH：
 
+```powershell
+ISCC.exe installer\verb_task.iss
 ```
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\verb_task.iss
+
+如果 Inno Setup 没有加入 PATH，可在 PowerShell 中先查找编译器，再使用返回的路径执行：
+
+```powershell
+$iscc = (Get-Command ISCC.exe -ErrorAction Stop).Source
+& $iscc installer\verb_task.iss
 ```
 
 产物输出到 `dist\VerbTask-setup.exe`。

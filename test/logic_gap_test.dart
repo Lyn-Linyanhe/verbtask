@@ -17,6 +17,28 @@ void main() {
     expect(fires.single, abs);
   });
 
+  test('相同触发时刻的多个提醒只生成一个通知时刻', () {
+    final fires = ReminderScheduler().fireTimesForDue(
+      DateTime.utc(2026, 9, 1, 10),
+      const [
+        Reminder(id: 'r1', offsetMinutes: -30),
+        Reminder(id: 'r2', offsetMinutes: -30),
+      ],
+    );
+
+    expect(fires, [DateTime.utc(2026, 9, 1, 9, 30)]);
+  });
+
+  test('仅日期提醒按当天上午九点计算提前量', () {
+    final fires = ReminderScheduler().fireTimesForDue(
+      DateTime.utc(2026, 9, 1),
+      const [Reminder(id: 'date', offsetMinutes: -30)],
+      dateOnly: true,
+    );
+
+    expect(fires, [DateTime(2026, 9, 1, 8, 30).toUtc()]);
+  });
+
   test('重复任务 seriesId 创建/编辑保持不变', () async {
     final repo = InMemoryRepository();
     final svc = TaskService(repo);
@@ -24,8 +46,35 @@ void main() {
     final edited = await svc.edit(t, title: '每日锻炼 v2');
     expect(edited.title, '每日锻炼 v2');
     expect(edited.rrule, 'FREQ=DAILY');
-    // copyWith 保持系列在同一 id/已存逻辑上 seriesId 可为空——这里验证 rrule 不被 edit 清空
+    expect(t.seriesId, isNotEmpty);
+    expect(edited.seriesId, t.seriesId);
     expect(t.id, edited.id);
+  });
+
+  test('重复任务完成或跳过单个实例不会完成整个系列', () async {
+    final repo = InMemoryRepository();
+    final svc = TaskService(repo);
+    final task = await svc.create(
+      title: '每日锻炼',
+      due: DueDate(DateTime.utc(2026, 1, 1, 9)),
+      rrule: 'FREQ=DAILY',
+    );
+    final first = DateTime.utc(2026, 1, 1, 9);
+    final completed = await svc.completeOccurrence(
+      task,
+      first,
+      completed: true,
+    );
+    expect(completed.status, TaskStatus.todo);
+    expect(completed.completedOccurrences, contains(occurrenceKey(first)));
+
+    final skipped = await svc.skipOccurrence(
+      completed,
+      first.add(const Duration(days: 1)),
+    );
+    expect(skipped.status, TaskStatus.todo);
+    expect(skipped.skippedOccurrences,
+        contains(occurrenceKey(first.add(const Duration(days: 1)))));
   });
 
   test('search 过滤命中 title 或 notes', () async {
@@ -61,4 +110,3 @@ void main() {
     expect(s2.llmModel, 'deepseek-chat');
   });
 }
-

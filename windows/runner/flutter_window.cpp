@@ -62,6 +62,14 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   }
 
   switch (message) {
+    case WM_GETMINMAXINFO: {
+      auto* limits = reinterpret_cast<MINMAXINFO*>(lparam);
+      // The Flutter side uses 360x220 for the floating quick-note window.
+      // Keep the native floor no larger than that target.
+      limits->ptMinTrackSize.x = 360;
+      limits->ptMinTrackSize.y = 220;
+      return 0;
+    }
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;

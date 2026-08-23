@@ -14,27 +14,32 @@ void main() {
     await svc.create(title: '没动的任务');
     await svc.create(title: '已完成任务', status: TaskStatus.done);
 
-    await tester.pumpWidget(VerbApp(repository: repo, initialLocale: const Locale('zh')));
+    await tester.pumpWidget(
+        VerbApp(repository: repo, initialLocale: const Locale('zh')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('doing-badge')), findsOneWidget,
         reason: '仅"进行中"任务应显示徽章');
     // 徽章文本为"进行中"
-    expect(find.descendant(
-      of: find.byKey(const ValueKey('doing-badge')),
-      matching: find.text('进行中'),
-    ), findsOneWidget);
+    expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('doing-badge')),
+          matching: find.text('进行中'),
+        ),
+        findsOneWidget);
   });
 
   testWidgets('录入框与搜索框 hint 可区分', (tester) async {
     final repo = InMemoryRepository();
-    await tester.pumpWidget(VerbApp(repository: repo, initialLocale: const Locale('zh')));
+    await tester.pumpWidget(
+        VerbApp(repository: repo, initialLocale: const Locale('zh')));
     await tester.pumpAndSettle();
 
     final addField = tester.widget<TextField>(find.byType(TextField).first);
     final searchField = tester.widget<TextField>(find.byType(TextField).at(1));
-    expect(addField.decoration?.hintText, '添加任务…');
-    expect(searchField.decoration?.hintText, '搜索任务');
-    expect(addField.decoration?.hintText, isNot(searchField.decoration?.hintText));
+    expect(addField.decoration?.hintText, '记下一件事…');
+    expect(searchField.decoration?.hintText, '搜索事项');
+    expect(
+        addField.decoration?.hintText, isNot(searchField.decoration?.hintText));
   });
 }

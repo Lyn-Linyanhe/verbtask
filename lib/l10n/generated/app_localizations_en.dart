@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Verb Task';
+  String get appTitle => 'Reminder Notes';
 
   @override
   String get inbox => 'Inbox';
@@ -33,7 +33,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get done => 'Done';
 
   @override
-  String get addTask => 'Add a task…';
+  String get addTask => 'Capture a note…';
 
   @override
   String get settings => 'Settings';
@@ -48,7 +48,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get search => 'Search';
 
   @override
-  String get searchTasks => 'Search tasks';
+  String get searchTasks => 'Search notes and reminders';
 
   @override
   String get filter => 'Filter';
@@ -73,7 +73,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Try a different keyword or clear the search';
 
   @override
-  String get searchNoResultTitle => 'No matching tasks';
+  String get searchNoResultTitle => 'No matching items';
 
   @override
   String get manageLists => 'Manage lists';
@@ -97,7 +97,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noLists => 'No lists yet';
 
   @override
-  String get deleteListConfirm => 'Tasks in this list will move to Inbox.';
+  String get deleteListConfirm => 'Items in this list will move to Inbox.';
 
   @override
   String get cancel => 'Cancel';
@@ -144,6 +144,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unrecognized => 'Unrecognized';
 
   @override
+  String get unrecognizedInput => 'No recordable item was recognized';
+
+  @override
+  String get reminderNeedsDue =>
+      'No due date was set, so the reminder cannot be scheduled; this will be saved as a regular item';
+
+  @override
   String get none => 'None';
 
   @override
@@ -162,41 +169,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emptyInboxTitle => 'Inbox is empty';
 
   @override
-  String get emptyInboxSubtitle => 'Capture something to do and finish it here';
+  String get emptyInboxSubtitle =>
+      'Capture something to remember and come back to it later';
 
   @override
   String get emptyInboxSubtitleHint =>
-      'Type naturally above, e.g. 明天下午3点 交周报 — give it a try';
+      'Try: remind me tomorrow at 3 PM to submit the weekly report';
 
   @override
-  String get emptyDoneTitle => 'No completed tasks yet';
+  String get emptyDoneTitle => 'No completed items yet';
 
   @override
-  String get emptyDoneSubtitle => 'Completed tasks will appear here';
+  String get emptyDoneSubtitle => 'Completed items will appear here';
 
   @override
-  String get emptyListTitle => 'No list tasks yet';
+  String get emptyListTitle => 'This list is empty';
 
   @override
-  String get emptyListSubtitle => 'Organize tasks into lists';
+  String get emptyListSubtitle => 'Group items here to find them later';
 
   @override
-  String get emptyTodayTitle => 'Nothing due today';
+  String get emptyTodayTitle => 'Nothing scheduled today';
 
   @override
-  String get emptyTodaySubtitle => 'Tasks due today will appear here';
+  String get emptyTodaySubtitle => 'Items due today will appear here';
 
   @override
-  String get emptyPlannedTitle => 'No planned tasks yet';
+  String get emptyPlannedTitle => 'No scheduled items yet';
 
   @override
-  String get emptyPlannedSubtitle => 'Add a due date to see a task here';
+  String get emptyPlannedSubtitle => 'Set a date to see an item here';
 
   @override
   String get emptyBoardTitle => 'The board is empty';
 
   @override
-  String get emptyBoardSubtitle => 'Tasks will be grouped by status here';
+  String get emptyBoardSubtitle => 'Items will be grouped by status here';
 
   @override
   String dateMonthDay(Object day, Object month) {
@@ -231,7 +239,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reminder => 'Reminder';
 
   @override
-  String get reminderEnabled => 'Remind me for this task';
+  String get reminderEnabled => 'Remind me about this item';
 
   @override
   String get reminderAdvanceMinutes => 'Minutes in advance';
@@ -261,13 +269,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get parseLlm => 'LLM';
 
   @override
-  String get editTask => 'Edit task';
+  String get editTask => 'Edit item';
 
   @override
   String get basicInformation => 'Basic information';
 
   @override
   String get titleField => 'Title';
+
+  @override
+  String get titleRequired => 'A title is required';
 
   @override
   String get notesField => 'Notes';
@@ -285,6 +296,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get repeatRuleHint => 'FREQ=DAILY';
 
   @override
+  String get editRecurringTitle => 'Edit recurring item';
+
+  @override
+  String get editThisOccurrence => 'This occurrence only';
+
+  @override
+  String get editThisAndFuture => 'This and following';
+
+  @override
+  String get editWholeSeries => 'Entire series';
+
+  @override
+  String get recurringDueRequired =>
+      'A recurring item needs a due date, or you can clear its repeat rule.';
+
+  @override
   String get save => 'Save';
 
   @override
@@ -297,7 +324,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String importedTasks(Object count) {
-    return 'Imported $count tasks';
+    return 'Imported $count items';
   }
 
   @override
@@ -317,7 +344,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get llmSendTaskTextDescription =>
-      'When enabled, task text is sent to the service you provide';
+      'When enabled, captured text is sent to the service you provide';
 
   @override
   String get llmOfflineParsingDescription =>
@@ -325,11 +352,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get llmDataNoticeTitle =>
-      'Task text will be sent to an external service';
+      'Captured text will be sent to an external service';
 
   @override
   String get llmDataNoticeBody =>
-      'LLM-enhanced parsing is enabled. After you confirm, the current text will be sent to the OpenAI-compatible endpoint you entered. VerbTask does not receive the data.';
+      'LLM-enhanced parsing is enabled. After you confirm, the current captured text will be sent to the OpenAI-compatible endpoint you entered. VerbTask does not receive the data.';
 
   @override
   String get llmFallbackNotice =>
@@ -359,6 +386,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get autoSyncIntervalMinutes => 'Auto-sync interval (minutes)';
+
+  @override
+  String get syncNotRun => 'Not synced yet';
+
+  @override
+  String get syncSucceeded => 'Last sync succeeded';
+
+  @override
+  String get syncFailed => 'Sync failed';
 
   @override
   String get useDefaultReminder => 'Use default reminder';
@@ -404,11 +440,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get launchAtStartup => 'Launch at startup';
 
   @override
+  String get autostartFailed =>
+      'Could not change startup setting. Check Windows permissions.';
+
+  @override
   String get emptyRecycleBinTitle => 'Recycle bin is empty';
 
   @override
   String get emptyRecycleBinSubtitle =>
-      'Deleted tasks appear here and can be restored';
+      'Deleted items appear here and can be restored';
 
   @override
   String get restore => 'Restore';
@@ -430,10 +470,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alwaysOnTop => 'Always on top';
 
   @override
-  String get quickNote => 'Quick note';
+  String get quickNote => 'Floating note';
 
   @override
-  String get quickNoteHint => 'Type a task, press Enter to save…';
+  String get quickNoteHint => 'Type a note or reminder, press Enter to save…';
 
   @override
   String get restoreWindow => 'Restore window';

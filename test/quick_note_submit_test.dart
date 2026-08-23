@@ -11,7 +11,7 @@ void main() {
         home: w,
       );
 
-  testWidgets('速记页：多行+newline 下回车能触发保存', (tester) async {
+  testWidgets('速记页：保存成功后回车能触发保存并清空输入', (tester) async {
     tester.view.physicalSize = const Size(600, 400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -23,7 +23,7 @@ void main() {
       onAdd: (text) async {
         saved = true;
         savedText = text;
-        return;
+        return true;
       },
     )));
     await tester.pumpAndSettle();
@@ -34,5 +34,25 @@ void main() {
     await tester.pumpAndSettle();
     expect(saved, isTrue, reason: 'onSubmitted 应被 newline 触发');
     expect(savedText, '速记任务');
+    expect(tester.widget<TextField>(field).controller!.text, isEmpty);
+  });
+
+  testWidgets('速记页：保存回调表示取消时保留原文', (tester) async {
+    tester.view.physicalSize = const Size(600, 400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(wrap(QuickNotePage(
+      onAdd: (_) async => false,
+    )));
+    await tester.pumpAndSettle();
+
+    final field = find.byType(TextField);
+    await tester.enterText(field, '需要确认的速记');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<TextField>(field).controller!.text, '需要确认的速记');
   });
 }

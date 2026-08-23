@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../core/models/models.dart';
@@ -23,7 +24,7 @@ class HomePage extends StatefulWidget {
   final ValueChanged<Locale> onLocaleChanged;
   final SettingsController? settings;
   final ThemeMode themeMode;
-  final VoidCallback? onQuickSync;
+  final Future<void> Function()? onQuickSync;
   final ValueChanged<ThemeMode>? onThemeModeChanged;
   const HomePage({
     super.key,
@@ -52,11 +53,12 @@ class _HomePageState extends State<HomePage> {
   TaskStatus? _statusFilter;
   BySort _sort = BySort.dueAsc;
   int _reloadToken = 0;
+  bool _quickAdding = false;
 
   @override
   void initState() {
     super.initState();
-    _tasks = TaskService(widget.repository);
+    _tasks = TaskService(widget.repository, onChanged: _reschedule);
     _reload();
   }
 
@@ -70,6 +72,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _reschedule() => AppNotifications.rescheduleAll(
         widget.repository,
         defaultOffsetMinutes: widget.settings?.defaultReminderOffsetMinutes,
+        language: widget.settings?.language ?? widget.locale.languageCode,
       );
 
   Future<void> _reload() async {
@@ -100,6 +103,7 @@ class _HomePageState extends State<HomePage> {
       case ViewFilter.inbox:
         listId = null;
       case ViewFilter.today:
+        dueFrom = _startOfDay(DateTime.now()).toUtc();
         dueTo =
             _startOfDay(DateTime.now().add(const Duration(days: 1))).toUtc();
       case ViewFilter.planned:
@@ -120,6 +124,7 @@ class _HomePageState extends State<HomePage> {
     var items = await _tasks.query(
       search: _search.text.trim().isEmpty ? null : _search.text.trim(),
       listId: listId,
+      inboxOnly: view == ViewFilter.inbox,
       status: status,
       includeDone: includeDone,
       dueFrom: dueFrom,
@@ -143,97 +148,134 @@ class _HomePageState extends State<HomePage> {
   DateTime _startOfDay(DateTime value) =>
       DateTime(value.year, value.month, value.day);
 
-  Future<void> _quickAdd(String text) async {
+  Future<bool> _quickAdd(String text) async {
+    if (_quickAdding) return false;
     final value = text.trim();
-    if (value.isEmpty) return;
+    if (value.isEmpty) return false;
+    setState(() => _quickAdding = true);
     final l = AppLocalizations.of(context);
+    try {
+      var config = _llmConfig();
+      if (config != null) {
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(AppLocalizations.of(ctx).llmDataNoticeTitle),
+            content: Text(AppLocalizations.of(ctx).llmDataNoticeBody),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(AppLocalizations.of(ctx).cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(AppLocalizations.of(ctx).confirm),
+              ),
+            ],
+          ),
+        );
+        if (proceed != true) config = null;
+      }
 
-    var config = _llmConfig();
-    if (config != null) {
-      final proceed = await showDialog<bool>(
+      final r = await _nlp.parse(value, config: config);
+      if (!mounted) return false;
+      if (r.title == null || r.title!.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l.unrecognizedInput)),
+        );
+        return false;
+      }
+      final matchedList = r.listName == null
+          ? null
+          : _lists.cast<TaskList?>().firstWhere(
+                (list) =>
+                    list!.name.trim().toLowerCase() ==
+                    r.listName!.trim().toLowerCase(),
+                orElse: () => null,
+              );
+      final parsedTitle = matchedList == null && r.listName != null
+          ? '${r.title ?? value} #${r.listName}'
+          : (r.title ?? value);
+      // 提醒：明确关闭优先；未提及时才继承全局默认提前量。
+      // An advance reminder without a due date cannot be scheduled. Keep the
+      // note, but never persist an enabled reminder that cannot fire.
+      final explicitReminderMin = r.reminderNeedsDue ? null : r.reminderMinutes;
+      int? reminderMin = explicitReminderMin;
+      if (!r.reminderDisabled &&
+          reminderMin == null &&
+          r.due != null &&
+          (widget.settings?.notifyDefaultReminderEnabled ?? false)) {
+        reminderMin = (widget.settings?.notifyDefaultOffsetMin ?? -15).abs();
+      }
+      final reminderLabel = r.reminderDisabled
+          ? l.noReminder
+          : reminderMin == null
+              ? l.noReminder
+              : (reminderMin == 0
+                  ? l.remindAtDue
+                  : l.remindBeforeMinutes(reminderMin));
+      final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text(AppLocalizations.of(ctx).llmDataNoticeTitle),
-          content: Text(AppLocalizations.of(ctx).llmDataNoticeBody),
+          title: Text(AppLocalizations.of(ctx).addTask),
+          content: Text(
+            '${l.parseTitle(parsedTitle.isEmpty ? l.unrecognized : parsedTitle)}\n'
+            '${l.parseDue(r.due?.value.toLocal() ?? l.none)}\n'
+            '${l.parseRepeat(r.rrule ?? l.none)}\n'
+            '${l.parseList(matchedList?.name ?? l.inbox)}\n'
+            '${l.parseReminder(r.reminderNeedsDue ? l.reminderNeedsDue : reminderLabel)}\n'
+            '${l.parsePriority(_priorityName(r.priority, l))}\n'
+            '${l.parseSource(r.source == 'llm' ? l.parseLlm : l.parseLocal)}'
+            '${r.fallbackFromLlm ? '\n${l.llmFallbackNotice}' : ''}',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: Text(AppLocalizations.of(ctx).cancel),
+              child: Text(l.cancel,
+                  style: TextStyle(
+                      color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text(AppLocalizations.of(ctx).confirm),
+              child: Text(l.confirm),
             ),
           ],
         ),
       );
-      if (proceed != true) config = null;
-    }
-
-    final r = await _nlp.parse(value, config: config);
-    if (!mounted) return;
-    // 提醒：显式解析结果优先；否则开了全局默认提醒且任务有截止时，套用默认提前量
-    int? reminderMin = r.reminderMinutes;
-    if (reminderMin == null &&
-        r.due != null &&
-        (widget.settings?.notifyDefaultReminderEnabled ?? false)) {
-      reminderMin = (widget.settings?.notifyDefaultOffsetMin ?? -15).abs();
-    }
-    final reminderLabel = reminderMin == null
-        ? l.noReminder
-        : (reminderMin == 0
-            ? l.remindAtDue
-            : l.remindBeforeMinutes(reminderMin));
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(AppLocalizations.of(ctx).addTask),
-        content: Text(
-          '${l.parseTitle(r.title ?? l.unrecognized)}\n'
-          '${l.parseDue(r.due?.value.toLocal() ?? l.none)}\n'
-          '${l.parseRepeat(r.rrule ?? l.none)}\n'
-          '${l.parseList(l.inbox)}\n'
-          '${l.parseReminder(reminderLabel)}\n'
-          '${l.parsePriority(_priorityName(r.priority, l))}\n'
-          '${l.parseSource(r.source == 'llm' ? l.parseLlm : l.parseLocal)}'
-          '${r.fallbackFromLlm ? '\n${l.llmFallbackNotice}' : ''}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l.cancel,
-                style: TextStyle(
-                    color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l.confirm),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      final reminders = reminderMin == null
-          ? const <Reminder>[]
-          : [
-              Reminder(
-                id: 'rem-${DateTime.now().microsecondsSinceEpoch}',
-                offsetMinutes: reminderMin == 0 ? 0 : -reminderMin,
-              )
-            ];
-      if (reminders.isNotEmpty) {
-        await AppNotifications.ensureNotificationPermission();
+      if (confirmed == true) {
+        final reminders = r.reminderDisabled || explicitReminderMin == null
+            ? const <Reminder>[]
+            : [
+                Reminder(
+                  id: 'rem-${DateTime.now().microsecondsSinceEpoch}',
+                  offsetMinutes:
+                      explicitReminderMin == 0 ? 0 : -explicitReminderMin,
+                )
+              ];
+        if (reminders.isNotEmpty) {
+          await AppNotifications.ensureNotificationPermission();
+        }
+        await _tasks.create(
+          title: parsedTitle,
+          listId: matchedList?.id,
+          due: r.due,
+          rrule: r.rrule,
+          priority: r.priority ?? 0,
+          reminders: reminders,
+          reminderPolicy: r.reminderDisabled
+              ? ReminderPolicy.disabled
+              : explicitReminderMin == null
+                  ? ReminderPolicy.inherit
+                  : ReminderPolicy.enabled,
+        );
+        await _reschedule();
+        _input.clear();
+        await _reload();
+        return true;
       }
-      await _tasks.create(
-        title: r.title ?? value,
-        due: r.due,
-        rrule: r.rrule,
-        priority: r.priority ?? 0,
-        reminders: reminders,
-      );
-      await _reschedule();
-      _input.clear();
-      await _reload();
+      return false;
+    } finally {
+      if (mounted) setState(() => _quickAdding = false);
     }
   }
 
@@ -308,6 +350,7 @@ class _HomePageState extends State<HomePage> {
           controller: settings,
           onLocaleChanged: widget.onLocaleChanged,
           onQuickSync: widget.onQuickSync,
+          onReminderSettingsChanged: _reschedule,
           themeMode: widget.themeMode,
           onThemeModeChanged: widget.onThemeModeChanged,
         ),
@@ -368,145 +411,165 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _AppHeader(
-              title: l.appTitle,
-              l: l,
-              onQuickSync: widget.onQuickSync,
-              onQuickNote: _openQuickNote,
-              onRecycle: _openBin,
-              onMenu: _onMenu,
-              hasSettings: widget.settings != null,
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-              child: TextField(
-                controller: _input,
-                onSubmitted: _quickAdd,
-                decoration: InputDecoration(
-                  hintText: l.addTask,
-                  prefixIcon: const Icon(Icons.add_rounded),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-              child: TextField(
-                controller: _search,
-                onChanged: (_) {
-                  setState(() {});
-                  _reload();
-                },
-                decoration: InputDecoration(
-                  hintText: l.searchTasks,
-                  isDense: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                  suffixIcon: _search.text.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: l.clearSearch,
-                          onPressed: () {
-                            _search.clear();
-                            setState(() {});
-                            _reload();
-                          },
-                          icon: const Icon(Icons.clear_rounded),
-                        ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: _ViewTabs(
-                current: _view,
-                onChanged: _changeView,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: _AppHeader(
+                title: l.appTitle,
                 l: l,
+                onQuickSync: widget.onQuickSync,
+                onQuickNote: _openQuickNote,
+                onRecycle: _openBin,
+                onMenu: _onMenu,
+                hasSettings: widget.settings != null,
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                child: TextField(
+                  controller: _input,
+                  onSubmitted: _quickAdd,
+                  decoration: InputDecoration(
+                    hintText: l.addTask,
+                    prefixIcon: const Icon(Icons.add_rounded),
+                  ),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                child: TextField(
+                  controller: _search,
+                  onChanged: (_) {
+                    setState(() {});
+                    _reload();
+                  },
+                  decoration: InputDecoration(
+                    hintText: l.searchTasks,
+                    isDense: true,
+                    fillColor:
+                        Theme.of(context).colorScheme.surfaceContainerLow,
+                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                    suffixIcon: _search.text.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: l.clearSearch,
+                            onPressed: () {
+                              _search.clear();
+                              setState(() {});
+                              _reload();
+                            },
+                            icon: const Icon(Icons.clear_rounded),
+                          ),
+                  ),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: _ViewTabs(
+                  current: _view,
+                  onChanged: _changeView,
+                  l: l,
+                ),
               ),
             ),
             if (_view == ViewFilter.list)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _selectedListId,
-                        isExpanded: true,
-                        decoration: InputDecoration(labelText: l.selectList),
-                        items: _lists
-                            .map((list) => DropdownMenuItem<String>(
-                                  value: list.id,
-                                  child: Text(list.name,
-                                      overflow: TextOverflow.ellipsis),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() => _selectedListId = value);
-                          _reload();
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: l.manageLists,
-                      onPressed: _openLists,
-                      icon: const Icon(Icons.tune_rounded),
-                    ),
-                  ],
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-              child: _QueryControls(
-                sort: _sort,
-                status: _statusFilter,
-                l: l,
-                onSortChanged: (value) {
-                  setState(() => _sort = value);
-                  _reload();
-                },
-                onStatusChanged: (value) {
-                  setState(() => _statusFilter = value);
-                  _reload();
-                },
-              ),
-            ),
-            Expanded(
-              child: _items.isEmpty
-                  ? (_search.text.trim().isNotEmpty
-                      ? _SearchEmpty(
-                          l: l,
-                          onClear: () {
-                            _search.clear();
-                            setState(() {});
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _selectedListId,
+                          isExpanded: true,
+                          decoration: InputDecoration(labelText: l.selectList),
+                          items: _lists
+                              .map((list) => DropdownMenuItem<String>(
+                                    value: list.id,
+                                    child: Text(list.name,
+                                        overflow: TextOverflow.ellipsis),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() => _selectedListId = value);
                             _reload();
                           },
-                        )
-                      : _EmptyState(view: _view, l: l))
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      itemCount: _items.length,
-                      itemBuilder: (context, index) {
-                        final task = _items[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 1),
-                          child: _TaskCard(
-                            task: task,
-                            onTap: () => _openEdit(task),
-                            onToggle: (done) async {
-                              await _tasks.setDone(task, done);
-                              await _reschedule();
-                              await _reload();
-                            },
-                          ),
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        tooltip: l.manageLists,
+                        onPressed: _openLists,
+                        icon: const Icon(Icons.tune_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: _QueryControls(
+                  sort: _sort,
+                  status: _statusFilter,
+                  l: l,
+                  onSortChanged: (value) {
+                    setState(() => _sort = value);
+                    _reload();
+                  },
+                  onStatusChanged: (value) {
+                    setState(() => _statusFilter = value);
+                    _reload();
+                  },
+                ),
+              ),
             ),
+            if (_items.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: _search.text.trim().isNotEmpty
+                    ? _SearchEmpty(
+                        l: l,
+                        onClear: () {
+                          _search.clear();
+                          setState(() {});
+                          _reload();
+                        },
+                      )
+                    : _EmptyState(view: _view, l: l),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final task = _items[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 1),
+                        child: _TaskCard(
+                          task: task,
+                          onTap: () => _openEdit(task),
+                          onToggle: (done) async {
+                            await _tasks.setDone(task, done);
+                            await _reschedule();
+                            await _reload();
+                          },
+                        ),
+                      );
+                    },
+                    childCount: _items.length,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -517,7 +580,7 @@ class _HomePageState extends State<HomePage> {
 class _AppHeader extends StatelessWidget {
   final String title;
   final AppLocalizations l;
-  final VoidCallback? onQuickSync;
+  final Future<void> Function()? onQuickSync;
   final VoidCallback onRecycle;
   final VoidCallback? onQuickNote;
   final ValueChanged<String> onMenu;
@@ -537,30 +600,34 @@ class _AppHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 6, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ),
-          IconButton(
-              tooltip: l.quickNote,
-              onPressed: onQuickNote,
-              icon: const Icon(Icons.sticky_note_2_outlined)),
-          IconButton(
-              tooltip: l.quickSync,
-              onPressed: onQuickSync,
-              icon: const Icon(Icons.sync_rounded)),
-          IconButton(
-              tooltip: l.recycleBin,
-              onPressed: onRecycle,
-              icon: const Icon(Icons.delete_outline_rounded)),
-          PopupMenuButton<String>(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final heading = Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w700),
+          );
+          final actions = [
+            IconButton(
+                tooltip: l.quickNote,
+                onPressed: onQuickNote,
+                icon: const Icon(Icons.sticky_note_2_outlined)),
+            IconButton(
+                tooltip: l.quickSync,
+                onPressed: onQuickSync == null
+                    ? null
+                    : () => unawaited(onQuickSync!.call()),
+                icon: const Icon(Icons.sync_rounded)),
+            IconButton(
+                tooltip: l.recycleBin,
+                onPressed: onRecycle,
+                icon: const Icon(Icons.delete_outline_rounded)),
+          ];
+          final menu = PopupMenuButton<String>(
             tooltip: l.more,
             icon: const Icon(Icons.more_horiz_rounded),
             onSelected: onMenu,
@@ -590,8 +657,23 @@ class _AppHeader extends StatelessWidget {
               PopupMenuItem(value: 'zh', child: Text(l.languageChinese)),
               PopupMenuItem(value: 'en', child: Text(l.languageEnglish)),
             ],
-          ),
-        ],
+          );
+          if (constraints.maxWidth < 520) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(children: [Expanded(child: heading), menu]),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: actions,
+                ),
+              ],
+            );
+          }
+          return Row(
+            children: [Expanded(child: heading), ...actions, menu],
+          );
+        },
       ),
     );
   }
@@ -662,51 +744,61 @@ class _QueryControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: DropdownButtonFormField<BySort>(
-            initialValue: sort,
-            isExpanded: true,
-            decoration: InputDecoration(labelText: l.filter),
-            items: [
-              DropdownMenuItem(
-                  value: BySort.dueAsc,
-                  child: Text(l.sortByDue, overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(
-                  value: BySort.createdDesc,
-                  child:
-                      Text(l.sortByCreated, overflow: TextOverflow.ellipsis)),
-              DropdownMenuItem(
-                  value: BySort.titleAsc,
-                  child: Text(l.sortByTitle, overflow: TextOverflow.ellipsis)),
-            ],
-            onChanged: (value) {
-              if (value != null) onSortChanged(value);
-            },
+    return LayoutBuilder(
+      builder: (context, constraints) => Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        children: [
+          SizedBox(
+            width: constraints.maxWidth < 400
+                ? constraints.maxWidth
+                : (constraints.maxWidth - 8) / 2,
+            child: DropdownButtonFormField<BySort>(
+              initialValue: sort,
+              isExpanded: true,
+              decoration: InputDecoration(labelText: l.filter),
+              items: [
+                DropdownMenuItem(
+                    value: BySort.dueAsc,
+                    child: Text(l.sortByDue, overflow: TextOverflow.ellipsis)),
+                DropdownMenuItem(
+                    value: BySort.createdDesc,
+                    child:
+                        Text(l.sortByCreated, overflow: TextOverflow.ellipsis)),
+                DropdownMenuItem(
+                    value: BySort.titleAsc,
+                    child:
+                        Text(l.sortByTitle, overflow: TextOverflow.ellipsis)),
+              ],
+              onChanged: (value) {
+                if (value != null) onSortChanged(value);
+              },
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            initialValue: status?.name ?? 'all',
-            isExpanded: true,
-            decoration: InputDecoration(labelText: l.statusField),
-            items: [
-              DropdownMenuItem(value: 'all', child: Text(l.allStatuses)),
-              DropdownMenuItem(value: 'todo', child: Text(l.todo)),
-              DropdownMenuItem(value: 'doing', child: Text(l.doing)),
-              DropdownMenuItem(value: 'done', child: Text(l.done)),
-            ],
-            onChanged: (value) => onStatusChanged(switch (value) {
-              'todo' => TaskStatus.todo,
-              'doing' => TaskStatus.doing,
-              'done' => TaskStatus.done,
-              _ => null,
-            }),
+          SizedBox(
+            width: constraints.maxWidth < 400
+                ? constraints.maxWidth
+                : (constraints.maxWidth - 8) / 2,
+            child: DropdownButtonFormField<String>(
+              initialValue: status?.name ?? 'all',
+              isExpanded: true,
+              decoration: InputDecoration(labelText: l.statusField),
+              items: [
+                DropdownMenuItem(value: 'all', child: Text(l.allStatuses)),
+                DropdownMenuItem(value: 'todo', child: Text(l.todo)),
+                DropdownMenuItem(value: 'doing', child: Text(l.doing)),
+                DropdownMenuItem(value: 'done', child: Text(l.done)),
+              ],
+              onChanged: (value) => onStatusChanged(switch (value) {
+                'todo' => TaskStatus.todo,
+                'doing' => TaskStatus.doing,
+                'done' => TaskStatus.done,
+                _ => null,
+              }),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -721,11 +813,11 @@ class _SearchEmpty extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.search_off_rounded, size: 40, color: scheme.onSurfaceVariant),
+        Icon(Icons.search_off_rounded,
+            size: 40, color: scheme.onSurfaceVariant),
         const SizedBox(height: 12),
         Text(l.searchNoResultTitle,
-            style: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w600)),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         Text(l.searchNoResultSubtitle,
             style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
@@ -830,122 +922,231 @@ class _TaskCard extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 13),
-          child: Row(
-            children: [
-              Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                      color: _statusColor(scheme), shape: BoxShape.circle)),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () => onToggle(!done),
-                child: Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: done ? scheme.tertiary : Colors.transparent,
-                    border: Border.all(
-                        color: done ? scheme.tertiary : scheme.outline,
-                        width: 1.6),
-                  ),
-                  child: done
-                      ? Icon(Icons.check, size: 14, color: scheme.onTertiary)
-                      : null,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 360;
+              final content = _TaskContent(
+                task: task,
+                done: done,
+                l: l,
+                scheme: scheme,
+                showMetadataBelow: compact,
+                metadata: _TaskMetadata(
+                  task: task,
+                  l: l,
+                  scheme: scheme,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(task.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: done
-                                ? scheme.onSurfaceVariant
-                                : scheme.onSurface,
-                            decoration:
-                                done ? TextDecoration.lineThrough : null)),
-                    if (task.status == TaskStatus.doing) ...[
-                      const SizedBox(height: 5),
-                      Container(
-                        key: const ValueKey('doing-badge'),
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: scheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(l.doing,
-                            style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: scheme.onPrimaryContainer)),
-                      ),
-                    ],
-                    if (task.due != null) ...[
-                      const SizedBox(height: 5),
-                      Row(children: [
-                        Icon(Icons.schedule_rounded,
-                            size: 13, color: scheme.onSurfaceVariant),
-                        const SizedBox(width: 3),
-                        Text(_fmt(task.due!, AppLocalizations.of(context)),
-                            style: TextStyle(
-                                fontSize: 12, color: scheme.onSurfaceVariant)),
-                      ]),
-                    ],
+                formatDue: _fmt,
+              );
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                          color: _statusColor(scheme), shape: BoxShape.circle)),
+                  const SizedBox(width: 12),
+                  _TaskToggle(
+                    taskId: task.id,
+                    done: done,
+                    scheme: scheme,
+                    onToggle: onToggle,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: content),
+                  if (!compact) ...[
+                    const SizedBox(width: 8),
+                    _TaskMetadata(task: task, l: l, scheme: scheme),
                   ],
-                ),
-              ),
-              if (task.isRepeating)
-                Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Icon(Icons.repeat_rounded,
-                        size: 16, color: scheme.primary)),
-              if (task.priority > 0)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Tooltip(
-                    message: _priorityBadgeLabel(task.priority, l),
-                    child: Icon(Icons.flag_rounded,
-                        size: 15,
-                        color: _priorityBadgeColor(task.priority, scheme)),
-                  ),
-                ),
-              if (task.due != null) _DueChip(due: task.due!),
-            ],
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  String _priorityBadgeLabel(int priority, AppLocalizations l) => switch (priority) {
-        3 => l.priorityHigh,
-        2 => l.priorityMedium,
-        1 => l.priorityLow,
-        _ => '',
-      };
-
-  Color _priorityBadgeColor(int priority, ColorScheme scheme) => switch (priority) {
-        3 => scheme.error,
-        2 => Colors.orange.shade700,
-        _ => scheme.onSurfaceVariant,
-      };
-
   String _fmt(DueDate due, AppLocalizations l) {
-    final d = due.value.toLocal();
+    final d = due.dateOnly ? due.value.toUtc() : due.value.toLocal();
     final date = l.dateMonthDay(d.day, d.month);
     if (due.dateOnly) return date;
     final h = d.hour.toString().padLeft(2, '0');
     final min = d.minute.toString().padLeft(2, '0');
     return '$date $h:$min';
   }
+}
+
+class _TaskToggle extends StatelessWidget {
+  final String taskId;
+  final bool done;
+  final ColorScheme scheme;
+  final ValueChanged<bool> onToggle;
+
+  const _TaskToggle({
+    required this.taskId,
+    required this.done,
+    required this.scheme,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      key: ValueKey('task-toggle-$taskId'),
+      width: 48,
+      height: 48,
+      child: Semantics(
+        button: true,
+        toggled: done,
+        onTap: () => onToggle(!done),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => onToggle(!done),
+          child: Center(
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: done ? scheme.tertiary : Colors.transparent,
+                border: Border.all(
+                    color: done ? scheme.tertiary : scheme.outline, width: 1.6),
+              ),
+              child: done
+                  ? Icon(Icons.check, size: 14, color: scheme.onTertiary)
+                  : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TaskContent extends StatelessWidget {
+  final Task task;
+  final bool done;
+  final AppLocalizations l;
+  final ColorScheme scheme;
+  final bool showMetadataBelow;
+  final Widget metadata;
+  final String Function(DueDate, AppLocalizations) formatDue;
+
+  const _TaskContent({
+    required this.task,
+    required this.done,
+    required this.l,
+    required this.scheme,
+    required this.showMetadataBelow,
+    required this.metadata,
+    required this.formatDue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(task.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: done ? scheme.onSurfaceVariant : scheme.onSurface,
+                decoration: done ? TextDecoration.lineThrough : null)),
+        if (task.status == TaskStatus.doing) ...[
+          const SizedBox(height: 5),
+          Container(
+            key: const ValueKey('doing-badge'),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: scheme.primaryContainer,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(l.doing,
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onPrimaryContainer)),
+          ),
+        ],
+        if (task.due != null) ...[
+          const SizedBox(height: 5),
+          Row(children: [
+            Icon(Icons.schedule_rounded,
+                size: 13, color: scheme.onSurfaceVariant),
+            const SizedBox(width: 3),
+            Flexible(
+              child: Text(formatDue(task.due!, l),
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+            ),
+          ]),
+        ],
+        if (showMetadataBelow && _hasMetadata(task)) ...[
+          const SizedBox(height: 4),
+          metadata,
+        ],
+      ],
+    );
+  }
+
+  bool _hasMetadata(Task task) =>
+      task.isRepeating || task.priority > 0 || task.due != null;
+}
+
+class _TaskMetadata extends StatelessWidget {
+  final Task task;
+  final AppLocalizations l;
+  final ColorScheme scheme;
+
+  const _TaskMetadata({
+    required this.task,
+    required this.l,
+    required this.scheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 2,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        if (task.isRepeating)
+          Tooltip(
+            message: l.repeatRule,
+            child: Icon(Icons.repeat_rounded, size: 16, color: scheme.primary),
+          ),
+        if (task.priority > 0)
+          Tooltip(
+            message: _priorityBadgeLabel(task.priority, l),
+            child: Icon(Icons.flag_rounded,
+                size: 15, color: _priorityBadgeColor(task.priority, scheme)),
+          ),
+        if (task.due != null) _DueChip(due: task.due!),
+      ],
+    );
+  }
+
+  String _priorityBadgeLabel(int priority, AppLocalizations l) =>
+      switch (priority) {
+        3 => l.priorityHigh,
+        2 => l.priorityMedium,
+        1 => l.priorityLow,
+        _ => '',
+      };
+
+  Color _priorityBadgeColor(int priority, ColorScheme scheme) =>
+      switch (priority) {
+        3 => scheme.error,
+        2 => Colors.orange.shade700,
+        _ => scheme.onSurfaceVariant,
+      };
 }
 
 class _DueChip extends StatelessWidget {
@@ -955,9 +1156,19 @@ class _DueChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final local = due.value.toLocal();
-    final overdue = local.isBefore(DateTime.now());
-    final urgent = overdue || local.difference(DateTime.now()).inDays == 0;
+    final now = DateTime.now();
+    final local = due.dateOnly ? due.value.toUtc() : due.value.toLocal();
+    final comparisonNow =
+        due.dateOnly ? DateTime.utc(now.year, now.month, now.day) : now;
+    final overdue = due.dateOnly
+        ? local.isBefore(comparisonNow)
+        : local.isBefore(comparisonNow);
+    final urgent = overdue ||
+        (!due.dateOnly && local.difference(comparisonNow).inDays == 0) ||
+        (due.dateOnly &&
+            local.year == comparisonNow.year &&
+            local.month == comparisonNow.month &&
+            local.day == comparisonNow.day);
     // 仅展示有信息量的状态；普通"有期限"与左侧时间重复，不再显示
     if (!overdue && !urgent) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
@@ -967,8 +1178,3 @@ class _DueChip extends StatelessWidget {
             TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color));
   }
 }
-
-
-
-
-

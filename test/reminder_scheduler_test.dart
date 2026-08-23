@@ -41,4 +41,56 @@ void main() {
       isNull,
     );
   });
+
+  test('重复任务预排未来窗口且跳过已完成实例', () {
+    final task = Task(
+      id: 'repeat',
+      title: '每日打卡',
+      rrule: 'FREQ=DAILY',
+      due: DueDate(DateTime.utc(2026, 1, 1, 9)),
+      completedOccurrences: {
+        occurrenceKey(DateTime.utc(2026, 1, 2, 9)),
+      },
+      createdAt: DateTime.utc(2025, 1, 1),
+      updatedAt: DateTime.utc(2025, 1, 1),
+    );
+    final upcoming = ReminderScheduler().upcomingDueForRepeating(
+      task,
+      DateTime.utc(2026, 1, 1),
+      RruleService(),
+      window: const Duration(days: 4),
+    );
+
+    expect(upcoming, contains(DateTime.utc(2026, 1, 1, 9)));
+    expect(upcoming, isNot(contains(DateTime.utc(2026, 1, 2, 9))));
+    expect(upcoming.length, 3);
+  });
+
+  test('COUNT 和 UNTIL 限制实例展开', () {
+    final rrule = RruleService();
+    expect(
+      rrule
+          .instancesBetween(
+            'FREQ=DAILY;COUNT=3',
+            DateTime.utc(2026, 1, 1),
+            DateTime.utc(2026, 1, 10),
+            start: DateTime.utc(2026, 1, 1),
+          )
+          .length,
+      3,
+    );
+    expect(
+      rrule.instancesBetween(
+        'FREQ=DAILY;UNTIL=20260103T000000Z',
+        DateTime.utc(2026, 1, 1),
+        DateTime.utc(2026, 1, 10),
+        start: DateTime.utc(2026, 1, 1),
+      ),
+      [
+        DateTime.utc(2026, 1, 1),
+        DateTime.utc(2026, 1, 2),
+        DateTime.utc(2026, 1, 3),
+      ],
+    );
+  });
 }

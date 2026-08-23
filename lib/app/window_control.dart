@@ -6,6 +6,7 @@ import 'package:window_manager/window_manager.dart';
 /// 仅在 Windows 上生效，其它平台静默降级，不抛错。
 class WindowControl {
   static Size? _normalSize; // 正常模式窗口尺寸
+  static const Size normalMinimumSize = Size(560, 400);
   static const Size miniSize = Size(420, 260);
   static const Size minMiniSize = Size(360, 220);
 
@@ -20,6 +21,14 @@ class WindowControl {
     if (!Platform.isWindows) return;
     try {
       await windowManager.setAlwaysOnTop(on);
+    } catch (_) {}
+  }
+
+  static Future<void> setMinimumSize(Size size) async {
+    if (!Platform.isWindows) return;
+    try {
+      await ensure();
+      await windowManager.setMinimumSize(size);
     } catch (_) {}
   }
 
@@ -41,12 +50,16 @@ class WindowControl {
     if (!Platform.isWindows) return;
     try {
       final size = _normalSize ?? const Size(900, 600);
-      await windowManager.setMinimumSize(Size(size.width, size.height));
+      await windowManager.setMinimumSize(normalMinimumSize);
       await windowManager.setSize(size);
       await windowManager.setAlwaysOnTop(restoreAlwaysOnTop);
       await windowManager.center();
+      _normalSize = null;
     } catch (_) {}
   }
+
+  /// 纯函数形式暴露恢复策略，供回归测试锁定悬浮窗尺寸约束。
+  static Size minimumSizeAfterMini(Size normalSize) => normalMinimumSize;
 
   /// 拖动窗口（供悬浮速记的把手使用）。
   static Future<void> startDragging() async {
@@ -56,5 +69,3 @@ class WindowControl {
     } catch (_) {}
   }
 }
-
-

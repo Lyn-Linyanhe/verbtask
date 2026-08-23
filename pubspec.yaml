@@ -1,7 +1,7 @@
 name: verb_app
-description: "A local-first personal task manager for Android & Windows."
+description: "A local-first personal reminder and notes app for Android & Windows."
 publish_to: "none"
-version: 0.4.11+1
+version: 0.4.12+1
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -32,6 +32,8 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
+  assets:
+    - assets/app_icon.ico
 
 
 

@@ -89,4 +89,32 @@ void main() {
       } catch (_) {}
     }
   });
+
+  testWidgets('修改默认提醒设置后立即通知宿主重排提醒', (tester) async {
+    final controller = SettingsController(
+      LocalSettings.inMemory(),
+      InMemoryRepository(),
+    );
+    var reschedules = 0;
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('zh'),
+      supportedLocales: const [Locale('en'), Locale('zh')],
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      home: SettingsPage(
+        controller: controller,
+        onLocaleChanged: (_) {},
+        onReminderSettingsChanged: () async => reschedules++,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, -850));
+    await tester.pumpAndSettle();
+    final tile =
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile).first);
+    tile.onChanged!(false);
+    await tester.pumpAndSettle();
+
+    expect(reschedules, 1);
+  });
 }

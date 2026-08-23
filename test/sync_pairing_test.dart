@@ -7,7 +7,11 @@ import 'package:verb_app/core/storage/inmemory_repository.dart';
 void main() {
   test('配对令牌：ensureSyncToken 生成并保留(幂等) + 持久化', () async {
     final dir = await Directory.systemTemp.createTemp('verb_tok_');
-    addTearDown(() async { try { await dir.delete(recursive: true); } catch (_) {} });
+    addTearDown(() async {
+      try {
+        await dir.delete(recursive: true);
+      } catch (_) {}
+    });
     final settings = LocalSettings(File('${dir.path}/s.json'));
     final controller = SettingsController(settings, InMemoryRepository());
     final t1 = controller.ensureSyncToken();

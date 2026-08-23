@@ -17,16 +17,42 @@ void backgroundCallbackDispatcher() {
       await SyncController.quickSync(
         token: syncToken,
         repo,
+        cursor: settings.syncCursor,
+        onCursorCommitted: (cursor) async {
+          settings
+            ..syncCursor = cursor
+            ..syncLastStatus = 'success'
+            ..syncLastError = ''
+            ..syncLastAt = DateTime.now().toUtc().toIso8601String();
+          await settings.save();
+        },
+        onError: (error) async {
+          settings
+            ..syncLastStatus = 'failed'
+            ..syncLastError = error.toString()
+            ..syncLastAt = DateTime.now().toUtc().toIso8601String();
+          await settings.save();
+        },
         onSynced: () => AppNotifications.rescheduleAll(
           repo,
           defaultOffsetMinutes: settings.notifyDefaultReminderEnabled
               ? settings.notifyDefaultOffsetMin
               : null,
+          language: settings.language,
           initializeIfNeeded: true,
         ),
       );
-    } catch (_) {
-      // 后台失败静默：下次周期再试
+    } catch (error) {
+      try {
+        final settings = LocalSettings(await AppPaths.settingsFile());
+        settings
+          ..syncLastStatus = 'failed'
+          ..syncLastError = error.toString()
+          ..syncLastAt = DateTime.now().toUtc().toIso8601String();
+        await settings.save();
+      } catch (_) {}
+      // 返回 false 让 WorkManager 按平台策略重试，而不是错误地确认成功。
+      return false;
     }
     return true;
   });
@@ -36,15 +62,36 @@ void backgroundCallbackDispatcher() {
 class BackgroundSync {
   static const _unique = 'verb-periodic-sync';
   static const _task = 'periodicSyncTask';
+  static bool _initialized = false;
 
-  static Future<void> init() async {
+  static int normalizeInterval(int minutes) => minutes.clamp(15, 24 * 60);
+
+  static Future<void> init({int intervalMinutes = 30}) async {
     if (!Platform.isAndroid) return;
-    await Workmanager().initialize(backgroundCallbackDispatcher);
+    if (!_initialized) {
+      await Workmanager().initialize(backgroundCallbackDispatcher);
+      _initialized = true;
+    }
     await Workmanager().registerPeriodicTask(
       _unique,
       _task,
-      frequency: const Duration(minutes: 30),
+      frequency: Duration(minutes: normalizeInterval(intervalMinutes)),
       existingWorkPolicy: ExistingWorkPolicy.keep,
+      constraints: Constraints(networkType: NetworkType.connected),
+    );
+  }
+
+  static Future<void> updateInterval(int intervalMinutes) async {
+    if (!Platform.isAndroid) return;
+    if (!_initialized) {
+      await init(intervalMinutes: intervalMinutes);
+      return;
+    }
+    await Workmanager().registerPeriodicTask(
+      _unique,
+      _task,
+      frequency: Duration(minutes: normalizeInterval(intervalMinutes)),
+      existingWorkPolicy: ExistingWorkPolicy.replace,
       constraints: Constraints(networkType: NetworkType.connected),
     );
   }

@@ -20,11 +20,15 @@ void main() {
     await svc.create(title: '另一个任务', status: TaskStatus.doing);
     await svc.create(title: '已完成示例', status: TaskStatus.done);
 
-    await tester.pumpWidget(VerbApp(repository: repo, initialLocale: const Locale('zh')));
+    await tester.pumpWidget(
+        VerbApp(repository: repo, initialLocale: const Locale('zh')));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('看板').first);
-    await tester.tap(find.text('看板').first);
+    final boardTab = find.byKey(const ValueKey('view-board'));
+    await tester.ensureVisible(boardTab);
+    expect(boardTab, findsOneWidget);
+    expect(boardTab.hitTestable(), findsOneWidget);
+    await tester.tap(boardTab);
     await tester.pumpAndSettle();
     expect(find.byType(BoardPage), findsOneWidget);
 

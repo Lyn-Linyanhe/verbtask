@@ -21,8 +21,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     final repo = InMemoryRepository();
     final svc = TaskService(repo);
-    final t =
-        await svc.create(title: '清洁', due: DueDate(DateTime.utc(2026, 9, 1, 10)));
+    final t = await svc.create(
+        title: '清洁', due: DueDate(DateTime.utc(2026, 9, 1, 10)));
     await tester.pumpWidget(le(TaskEditPage(task: t, service: svc)));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.byIcon(Icons.clear_rounded));
@@ -35,4 +35,3 @@ void main() {
     expect(updated.due, isNull);
   });
 }
-

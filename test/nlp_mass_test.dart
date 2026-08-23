@@ -16,6 +16,7 @@ void main() {
     }
     return target.add(Duration(days: weeks * 7));
   }
+
   String iso(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
@@ -41,7 +42,7 @@ void main() {
       expect(d.title, '交报告');
       expect(d.dateOnly, isFalse);
       expect(d.due!.toLocal().hour, 15);
-      expect(iso(d.due!.toLocal()), iso(nextWeekday(3, weeks: 1)));
+      expect(iso(d.due!.toLocal()), iso(nextWeekday(3)));
     });
     test('B.05 每隔2天买菜', () {
       expect(p.parse('每隔2天买菜').rrule, 'FREQ=DAILY;INTERVAL=2');

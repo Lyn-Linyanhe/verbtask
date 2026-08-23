@@ -12,6 +12,9 @@ class SyncHost {
 
   static Future<SyncHost> start(TaskRepository repo,
       {String token = ''}) async {
+    if (token.trim().isEmpty) {
+      throw StateError('同步服务必须配置非空令牌');
+    }
     final server = SyncServer(repo, token: token);
     await server.start(); // 绑定任意空闲端口
     final responder = await LanDiscovery.startResponder(httpPort: server.port);

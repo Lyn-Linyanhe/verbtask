@@ -47,7 +47,8 @@ void main() {
 
     final repo = InMemoryRepository();
     final svc = TaskService(repo);
-    await tester.pumpWidget(VerbApp(repository: repo, initialLocale: const Locale('zh')));
+    await tester.pumpWidget(
+        VerbApp(repository: repo, initialLocale: const Locale('zh')));
     await tester.pumpAndSettle();
 
     await addTask(tester, '明天下午3点 交周报 高');
@@ -79,13 +80,18 @@ void main() {
 
     await tester.tap(find.textContaining('交周报').first);
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('task-status')));
+    final statusField = find.byKey(const ValueKey('task-status'));
+    await tester.ensureVisible(statusField);
+    await tester.tap(statusField);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('进行中').last);
+    final doingOption = find.text('进行中').last;
+    await tester.ensureVisible(doingOption);
+    await tester.tap(doingOption);
     await tester.pumpAndSettle();
     await tester.tap(find.text('保存'));
     await tester.pumpAndSettle();
-    final edited = (await repo.allTasks()).firstWhere((t) => t.title.contains('交周报'));
+    final edited =
+        (await repo.allTasks()).firstWhere((t) => t.title.contains('交周报'));
     expect(edited.status, TaskStatus.doing);
 
     await tester.tap(find.byKey(const ValueKey('view-board')));
@@ -97,7 +103,8 @@ void main() {
     tasks = await repo.allTasks();
     final buy = tasks.firstWhere((t) => t.title.contains('买菜'));
     await svc.recycle(buy);
-    await tester.pumpWidget(VerbApp(repository: repo, initialLocale: const Locale('zh')));
+    await tester.pumpWidget(
+        VerbApp(repository: repo, initialLocale: const Locale('zh')));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.delete_outline_rounded));
     await tester.pumpAndSettle();
@@ -124,7 +131,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final repo = InMemoryRepository();
-    await tester.pumpWidget(VerbApp(repository: repo, initialLocale: const Locale('zh')));
+    await tester.pumpWidget(
+        VerbApp(repository: repo, initialLocale: const Locale('zh')));
     await tester.pumpAndSettle();
 
     // 悬浮速记
@@ -185,5 +193,3 @@ void main() {
     await goBack(tester);
   });
 }
-
-

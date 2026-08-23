@@ -18,14 +18,18 @@ void main() {
     final tomorrow = DateTime(now.year, now.month, now.day + 1, 15, 0);
     final repo = InMemoryRepository();
     final svc = TaskService(repo);
-    await svc.create(title: '带日期的看板任务',
-        due: DueDate(tomorrow, dateOnly: false));
+    await svc.create(
+        title: '带日期的看板任务', due: DueDate(tomorrow, dateOnly: false));
 
-    await tester.pumpWidget(VerbApp(repository: repo, initialLocale: const Locale('zh')));
+    await tester.pumpWidget(
+        VerbApp(repository: repo, initialLocale: const Locale('zh')));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('看板').first);
-    await tester.tap(find.text('看板').first);
+    final boardTab = find.byKey(const ValueKey('view-board'));
+    await tester.ensureVisible(boardTab);
+    expect(boardTab, findsOneWidget);
+    expect(boardTab.hitTestable(), findsOneWidget);
+    await tester.tap(boardTab);
     await tester.pumpAndSettle();
     expect(find.byType(BoardPage), findsOneWidget);
 

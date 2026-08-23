@@ -67,8 +67,8 @@ void main() {
       locale: const Locale('en'),
     ));
     await tester.pumpAndSettle();
-    expect(find.text('Edit task'), findsOneWidget);
-    expect(find.text('编辑任务'), findsNothing);
+    expect(find.text('Edit item'), findsOneWidget);
+    expect(find.text('编辑事项'), findsNothing);
 
     await tester.pumpWidget(localizedApp(
       RecycleBinPage(service: svc),
@@ -161,6 +161,31 @@ void main() {
 
     expect(find.text('工作'), findsOneWidget);
     expect(find.text('工作任务'), findsOneWidget);
+  });
+
+  testWidgets('今天视图不混入更早的逾期任务', (tester) async {
+    final repo = InMemoryRepository();
+    final service = TaskService(repo);
+    final now = DateTime.now();
+    await service.create(
+      title: '昨天任务',
+      due: DueDate(now.subtract(const Duration(days: 1))),
+    );
+    await service.create(
+      title: '今天任务',
+      due: DueDate(now.add(const Duration(hours: 1))),
+    );
+
+    await tester.pumpWidget(VerbApp(
+      repository: repo,
+      initialLocale: const Locale('zh'),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('view-today')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('今天任务'), findsOneWidget);
+    expect(find.text('昨天任务'), findsNothing);
   });
 
   testWidgets('编辑页保存日期模式、提醒、优先级和清单', (tester) async {

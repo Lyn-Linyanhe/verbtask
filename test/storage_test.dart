@@ -29,6 +29,73 @@ void main() {
     expect((await repo2.allLists()).first.name, '生活');
   });
 
+  test('同一仓库并发写入不会丢失任一任务', () async {
+    final repo = FileRepository(File('${dir.path}/concurrent.json'));
+    final first = Task(
+      id: 'first',
+      title: '第一条',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+    final second = Task(
+      id: 'second',
+      title: '第二条',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 2),
+    );
+
+    await Future.wait([repo.upsertTask(first), repo.upsertTask(second)]);
+
+    expect((await repo.allTasks()).map((task) => task.id).toSet(),
+        {'first', 'second'});
+  });
+
+  test('不同仓库实例写入同一文件不会覆盖另一实例的新任务', () async {
+    final f = File('${dir.path}/cross-instance.json');
+    final firstRepo = FileRepository(f);
+    final secondRepo = FileRepository(f);
+
+    await firstRepo.upsertTask(Task(
+      id: 'first',
+      title: '前台写入',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    ));
+    await secondRepo.upsertTask(Task(
+      id: 'second',
+      title: '后台写入',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 2),
+    ));
+
+    final reloaded = FileRepository(f);
+    expect((await reloaded.allTasks()).map((task) => task.id).toSet(),
+        {'first', 'second'});
+  });
+
+  test('永久删除墓碑不会被旧编辑对象重新写回', () async {
+    final repo = FileRepository(File('${dir.path}/tombstone-guard.json'));
+    final oldTask = Task(
+      id: 'gone',
+      title: '旧标题',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+      version: 1,
+      changeId: 'gone-v1',
+    );
+    await repo.upsertTombstone(TaskTombstone(
+      id: 'gone',
+      updatedAt: DateTime.utc(2026, 1, 2),
+      version: 2,
+      changeId: 'gone-delete-v2',
+    ));
+
+    await repo.upsertTask(oldTask);
+
+    expect(await repo.allTasks(), isEmpty);
+    expect((await repo.allTombstones()).single.changeId, 'gone-delete-v2');
+  });
+
   test('写入失败时不移除已有数据文件', () async {
     final f = File('${dir.path}/data.json');
     final repo = FileRepository(f);
@@ -216,5 +283,77 @@ void main() {
     );
     expect(await f.readAsString(), before);
     expect((await repo.allTasks()).single.id, 'keep');
+  });
+
+  test('损坏数据抛出带恢复副本路径的异常且保留原文件', () async {
+    final f = File('${dir.path}/broken.json');
+    const original = '{"version":1,"tasks":[{"id":';
+    await f.writeAsString(original);
+
+    StorageLoadException? error;
+    try {
+      FileRepository(f);
+    } on StorageLoadException catch (e) {
+      error = e;
+    }
+
+    expect(error, isNotNull);
+    expect(error!.filePath, f.path);
+    expect(error.recoveryPath, isNotNull);
+    expect(await f.readAsString(), original);
+    expect(await File(error.recoveryPath!).exists(), isTrue);
+  });
+
+  test('未来 schema 版本拒绝加载且不覆盖原文件', () async {
+    final f = File('${dir.path}/future.json');
+    final original = jsonEncode({
+      'version': 999,
+      'tasks': const [],
+      'lists': const [],
+      'changes': const [],
+    });
+    await f.writeAsString(original);
+
+    expect(() => FileRepository(f), throwsA(isA<StorageLoadException>()));
+    expect(await f.readAsString(), original);
+    final copies = f.parent
+        .listSync()
+        .whereType<File>()
+        .where((candidate) => candidate.path.contains('.corrupt-'));
+    expect(copies, isNotEmpty);
+  });
+
+  test('JSON 导入遇到坏记录时保持仓库与磁盘不变', () async {
+    final f = File('${dir.path}/atomic.json');
+    final repo = FileRepository(f);
+    await repo.upsertTask(Task(
+      id: 'keep',
+      title: '原有任务',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    ));
+    final before = await f.readAsString();
+    final valid = Task(
+      id: 'new',
+      title: '应该回滚',
+      createdAt: DateTime.utc(2026, 1, 2),
+      updatedAt: DateTime.utc(2026, 1, 2),
+    ).toJson();
+    final bad = jsonEncode({
+      'format': 'verb-app',
+      'version': 1,
+      'tasks': [
+        valid,
+        {'id': 'broken', 'title': 42}
+      ],
+      'lists': const [],
+    });
+
+    expect(
+      BackupService(repo).importJson(bad),
+      throwsA(anyOf(isA<TypeError>(), isA<FormatException>())),
+    );
+    expect(await f.readAsString(), before);
+    expect((await repo.allTasks()).map((task) => task.id), ['keep']);
   });
 }

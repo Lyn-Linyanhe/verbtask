@@ -8,6 +8,7 @@ import 'package:verb_app/app.dart';
 import 'package:verb_app/core/nlp/zh_parser.dart';
 import 'package:verb_app/core/nlp/llm_client.dart';
 import 'package:verb_app/core/nlp/nlp_service.dart';
+import 'package:verb_app/core/models/models.dart';
 import 'package:verb_app/core/services/task_service.dart';
 import 'package:verb_app/core/storage/inmemory_repository.dart';
 import 'package:verb_app/core/settings/local_settings.dart';
@@ -82,14 +83,13 @@ void main() {
       final svc = NlpService(llm: LlmClient(client: mock));
       final r = await svc.parse('提醒我喝水',
           config: const LlmConfig(baseUrl: 'https://x/v1', apiKey: 'k'));
-      expect(r.reminderMinutes, 15,
-          reason: 'LLM 未给提醒但文本含“提醒”时安全网兜底15分钟');
+      expect(r.reminderMinutes, 15, reason: 'LLM 未给提醒但文本含“提醒”时安全网兜底15分钟');
     });
   });
 
   group('快速录入真实创建提醒', () {
-    Future<(TaskService, InMemoryRepository, SettingsController)>
-        setup({required bool defaultEnabled, int defaultOffset = -30}) async {
+    Future<(TaskService, InMemoryRepository, SettingsController)> setup(
+        {required bool defaultEnabled, int defaultOffset = -30}) async {
       final dir = Directory.systemTemp.createTempSync('verb_rm');
       final repo = InMemoryRepository();
       final svc = TaskService(repo);
@@ -110,7 +110,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('全局默认提醒 → 快速录入创建带 -30min 提醒', (tester) async {
+    testWidgets('全局默认提醒 → 快速录入保留继承策略', (tester) async {
       final (_, repo, settings) = await setup(defaultEnabled: true);
       await tester.pumpWidget(VerbApp(
           repository: repo,
@@ -120,8 +120,8 @@ void main() {
 
       await quickAdd(tester, '明天下午3点开会');
       final tasks = await repo.allTasks();
-      expect(tasks.single.reminders, isNotEmpty);
-      expect(tasks.single.reminders.first.offsetMinutes, -30);
+      expect(tasks.single.reminders, isEmpty);
+      expect(tasks.single.reminderPolicy, ReminderPolicy.inherit);
     });
 
     testWidgets('显式“提前10分钟”优先于默认', (tester) async {
@@ -148,6 +148,28 @@ void main() {
       await quickAdd(tester, '买菜');
       final tasks = await repo.allTasks();
       expect(tasks.single.reminders, isEmpty);
+    });
+
+    testWidgets('有提醒意图但没有截止时间 → 明确提示并按普通事项保存', (tester) async {
+      final (_, repo, settings) = await setup(defaultEnabled: true);
+      await tester.pumpWidget(VerbApp(
+          repository: repo,
+          initialLocale: const Locale('zh'),
+          settings: settings));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, '提醒我买瓶酱油');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('没有截止日期，提醒无法安排'), findsOneWidget);
+      await tester.tap(find.text('确认'));
+      await tester.pumpAndSettle();
+
+      final tasks = await repo.allTasks();
+      expect(tasks.single.title, '买瓶酱油');
+      expect(tasks.single.reminders, isEmpty);
+      expect(tasks.single.reminderPolicy, ReminderPolicy.inherit);
     });
   });
 
@@ -185,14 +207,13 @@ void main() {
       expect(r.reminderMinutes, 15);
     });
     test('LLM 漏提提醒，但含“闹钟”→15', () async {
-      final r = await parseWith('帮我定个明早7点的闹钟起床',
-          draft: const {
-            'title': '定闹钟起床',
-            'due': '2026-08-22T07:00:00.000Z',
-            'dateOnly': false,
-            'rrule': null,
-            'priority': 0
-          });
+      final r = await parseWith('帮我定个明早7点的闹钟起床', draft: const {
+        'title': '定闹钟起床',
+        'due': '2026-08-22T07:00:00.000Z',
+        'dateOnly': false,
+        'rrule': null,
+        'priority': 0
+      });
       expect(r.reminderMinutes, 15);
     });
     test('LLM 漏提提醒，但含“记得”→15', () async {
@@ -200,16 +221,27 @@ void main() {
       expect(r.reminderMinutes, 15);
     });
     test('LLM 已给提前量时不被覆盖', () async {
-      final r = await parseWith('明天早上叫我起床，提前1小时',
-          draft: const {
-            'title': '起床',
-            'due': '2026-08-22T00:00:00.000Z',
-            'dateOnly': true,
-            'rrule': null,
-            'priority': 0,
-            'reminderMinutes': 60
-          });
+      final r = await parseWith('明天早上叫我起床，提前1小时', draft: const {
+        'title': '起床',
+        'due': '2026-08-22T00:00:00.000Z',
+        'dateOnly': true,
+        'rrule': null,
+        'priority': 0,
+        'reminderMinutes': 60
+      });
       expect(r.reminderMinutes, 60);
+    });
+    test('LLM 返回负提醒分钟时回到文本语义而不是安排到期后', () async {
+      final r = await parseWith('喝水', draft: const {
+        'title': '喝水',
+        'due': null,
+        'dateOnly': false,
+        'rrule': null,
+        'priority': 0,
+        'reminderMinutes': -30,
+      });
+      expect(r.reminderMinutes, isNull);
+      expect(r.reminderDisabled, isFalse);
     });
   });
 
@@ -244,8 +276,8 @@ void main() {
     test('LLM 漏 BYHOUR，原文含“下午3点”→补 15:00', () async {
       final r = await parseWith('每两周周五下午3点开周会',
           rrule: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=FR');
-      expect(
-          r.rrule, 'FREQ=WEEKLY;INTERVAL=2;BYDAY=FR;BYHOUR=15;BYMINUTE=0;BYSECOND=0');
+      expect(r.rrule,
+          'FREQ=WEEKLY;INTERVAL=2;BYDAY=FR;BYHOUR=15;BYMINUTE=0;BYSECOND=0');
     });
     test('LLM 漏 BYHOUR，原文“下班后”→补 18:00', () async {
       final r = await parseWith('每天下班后打卡', rrule: 'FREQ=DAILY');
@@ -257,25 +289,39 @@ void main() {
       expect(r.rrule, 'FREQ=WEEKLY;BYDAY=FR;BYHOUR=15;BYMINUTE=0;BYSECOND=0');
     });
     test('LLM 把“每月月底”写成 BYMONTHDAY=31 → 改 -1', () async {
-      final r = await parseWith('每月月底做账',
-          rrule: 'FREQ=MONTHLY;BYMONTHDAY=31');
+      final r = await parseWith('每月月底做账', rrule: 'FREQ=MONTHLY;BYMONTHDAY=31');
       expect(r.rrule, 'FREQ=MONTHLY;BYMONTHDAY=-1');
     });
     test('LLM 漏 BYDAY，原文“下周二”→补 BYDAY=TU', () async {
       final r = await parseWith('下周二下午两点开始每周开会',
           rrule: 'FREQ=WEEKLY;BYHOUR=14;BYMINUTE=0;BYSECOND=0');
-      expect(r.rrule,
-          'FREQ=WEEKLY;BYHOUR=14;BYMINUTE=0;BYSECOND=0;BYDAY=TU');
+      expect(r.rrule, 'FREQ=WEEKLY;BYHOUR=14;BYMINUTE=0;BYSECOND=0;BYDAY=TU');
+    });
+    test('LLM 合并不把“下周二”首个截止日锚到今天', () async {
+      final r = await parseWith(
+        '下周二下午两点开始每周开会',
+        rrule: 'FREQ=WEEKLY;BYDAY=TU;BYHOUR=14;BYMINUTE=0;BYSECOND=0',
+      );
+      expect(r.due, isNotNull);
+      expect(r.due!.value.toLocal().weekday, DateTime.tuesday);
+      expect(r.due!.value.toLocal().hour, 14);
     });
     test('LLM 漏 BYDAY，原文“每周二和周四”→补 BYDAY=TU,TH', () async {
       final r = await parseWith('每周二和周四晚上8点学英语',
           rrule: 'FREQ=WEEKLY;BYHOUR=20;BYMINUTE=0;BYSECOND=0');
-      expect(r.rrule,
-          'FREQ=WEEKLY;BYHOUR=20;BYMINUTE=0;BYSECOND=0;BYDAY=TU,TH');
+      expect(
+          r.rrule, 'FREQ=WEEKLY;BYHOUR=20;BYMINUTE=0;BYSECOND=0;BYDAY=TU,TH');
     });
     test('LLM 凭空写 BYHOUR=0 且原文无时刻 → 移除', () async {
       final r = await parseWith('每周五交周报 记得提前提醒',
           rrule: 'FREQ=WEEKLY;BYDAY=FR;BYHOUR=0;BYMINUTE=0;BYSECOND=0');
+      expect(r.rrule, 'FREQ=WEEKLY;BYDAY=FR');
+    });
+    test('无时刻文本会清掉不完整的固定时刻字段', () async {
+      final r = await parseWith(
+        '每周五交周报',
+        rrule: 'FREQ=WEEKLY;BYDAY=FR;BYHOUR=10;BYMINUTE=0',
+      );
       expect(r.rrule, 'FREQ=WEEKLY;BYDAY=FR');
     });
     test('原文确实有“0点”→保留 BYHOUR=0', () async {
@@ -289,8 +335,7 @@ void main() {
       expect(r.rrule, 'FREQ=WEEKLY;BYDAY=SA,SU');
     });
     test('LLM 已给 SA,SU 不重复改', () async {
-      final r = await parseWith('每周末大扫除',
-          rrule: 'FREQ=WEEKLY;BYDAY=SA,SU');
+      final r = await parseWith('每周末大扫除', rrule: 'FREQ=WEEKLY;BYDAY=SA,SU');
       expect(r.rrule, 'FREQ=WEEKLY;BYDAY=SA,SU');
     });
     test('LLM 漏 BYHOUR，原文中文数字“两点”→补 14:00', () async {
@@ -309,6 +354,18 @@ void main() {
       final r = await parseWith('每周五下午提交周报',
           rrule: 'FREQ=WEEKLY;BYDAY=FR;BYHOUR=15;BYMINUTE=0;BYSECOND=0');
       expect(r.rrule, 'FREQ=WEEKLY;BYDAY=FR;BYHOUR=15;BYMINUTE=0;BYSECOND=0');
+    });
+    test('LLM 返回重复规则但没有起点时补上今天作为待确认的系列起点', () async {
+      final r = await parseWith('每季度体检', rrule: 'FREQ=MONTHLY;INTERVAL=3');
+
+      expect(r.rrule, 'FREQ=MONTHLY;INTERVAL=3');
+      expect(r.due, isNotNull);
+      expect(r.due!.dateOnly, isTrue);
+    });
+    test('本地明确“每天”时不接受 LLM 返回的错误周频率', () async {
+      final r = await parseWith('每天喝水', rrule: 'FREQ=WEEKLY');
+
+      expect(r.rrule, 'FREQ=DAILY');
     });
   });
 
@@ -428,4 +485,3 @@ void main() {
     });
   });
 }
-

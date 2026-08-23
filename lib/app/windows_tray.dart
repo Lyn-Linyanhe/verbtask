@@ -51,8 +51,18 @@ class WindowsTray {
     try {
       await windowManager.setPreventClose(enabled);
       final tray = TrayManager.instance;
-      await windowManager.setTitle('Verb Task');
+      await windowManager.setTitle('VerbTask');
       if (enabled) {
+        final exeDir = File(Platform.resolvedExecutable).parent.path;
+        final packagedIcon = File(
+            '$exeDir${Platform.pathSeparator}data${Platform.pathSeparator}'
+            'flutter_assets${Platform.pathSeparator}assets${Platform.pathSeparator}'
+            'app_icon.ico');
+        final iconPath = packagedIcon.existsSync()
+            ? packagedIcon.path
+            : 'assets${Platform.pathSeparator}app_icon.ico';
+        await tray.setIcon(iconPath);
+        await tray.setToolTip('VerbTask');
         await windowManager.show();
         await windowManager.focus();
         await tray.setContextMenu(Menu(items: [
@@ -67,4 +77,3 @@ class WindowsTray {
 
   static bool get enabled => _enabled;
 }
-

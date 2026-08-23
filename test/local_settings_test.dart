@@ -3,6 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:verb_app/core/settings/local_settings.dart';
 
 void main() {
+  test('内存设置不会尝试写入磁盘', () async {
+    final settings = LocalSettings.inMemory();
+    settings.language = 'en';
+
+    await settings.save();
+
+    expect(settings.language, 'en');
+  });
+
   test('默认值 + 读写持久化', () async {
     final dir = Directory.systemTemp.createTempSync('verb_set_');
     try {
@@ -29,6 +38,19 @@ void main() {
       expect(s2.notifyDefaultReminderEnabled, isFalse);
       expect(s2.notifyDefaultOffsetMin, -60);
       expect(s2.themeMode, 'dark');
+    } finally {
+      dir.deleteSync(recursive: true);
+    }
+  });
+
+  test('默认提醒提前量始终按到期前语义归一为非正数', () {
+    final dir = Directory.systemTemp.createTempSync('verb_settings_offset_');
+    try {
+      final settings = LocalSettings(File('${dir.path}/settings.json'));
+
+      settings.notifyDefaultOffsetMin = 30;
+
+      expect(settings.notifyDefaultOffsetMin, -30);
     } finally {
       dir.deleteSync(recursive: true);
     }

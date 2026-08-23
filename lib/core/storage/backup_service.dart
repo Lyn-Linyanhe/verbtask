@@ -35,8 +35,8 @@ class BackupService {
     });
   }
 
-  /// 导入：解析后逐条 upsert（保留各自 id/version/changeId，避免覆盖破坏引用）。
-  /// 返回导入的任务数。版本不支持的备份在写入前即拒绝。
+  /// 导入：先完整解析并校验，再一次替换快照，避免坏记录留下半次导入。
+  /// 保留各自 id/version/changeId，避免覆盖破坏引用。返回导入的任务数。
   Future<int> importJson(String json) async {
     final root = jsonDecode(json) as Map<String, dynamic>;
     if (root['format'] != 'verb-app') {
@@ -47,13 +47,32 @@ class BackupService {
       throw FormatException('不支持的备份版本: $version');
     }
     final lists = (root['lists'] as List?) ?? const [];
-    for (final e in lists) {
-      await _repo.upsertList(TaskList.fromJson(e as Map<String, Object?>));
-    }
+    final importedLists =
+        lists.map((e) => TaskList.fromJson(e as Map<String, Object?>)).toList();
     final tasks = (root['tasks'] as List?) ?? const [];
-    for (final e in tasks) {
-      await _repo.upsertTask(Task.fromJson(e as Map<String, Object?>));
-    }
+    final importedTasks =
+        tasks.map((e) => Task.fromJson(e as Map<String, Object?>)).toList();
+
+    final mergedLists = {
+      for (final list in await _repo.allLists()) list.id: list
+    }..addEntries(importedLists.map((list) => MapEntry(list.id, list)));
+    final mergedTasks = {
+      for (final task in await _repo.allTasks()) task.id: task
+    }..addEntries(importedTasks.map((task) => MapEntry(task.id, task)));
+    final existingTombstones = await _repo.allTombstones();
+    final changes = importedTasks.map((task) => Change(
+          changeId: task.changeId,
+          taskId: task.id,
+          kind: task.deleted ? 'delete' : 'upsert',
+          timestamp: task.updatedAt,
+          version: task.version,
+        ));
+    await _repo.replaceSnapshot(
+      tasks: mergedTasks.values.toList(),
+      lists: mergedLists.values.toList(),
+      tombstones: existingTombstones,
+      changes: changes,
+    );
     return tasks.length;
   }
 

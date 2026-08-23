@@ -75,17 +75,22 @@ class _RecycleBinPageState extends State<RecycleBinPage> {
                                 final ok = await showDialog<bool>(
                                   context: context,
                                   builder: (ctx) => AlertDialog(
-                                    title: Text(l.deletePermanentlyConfirmTitle),
-                                    content: Text(l.deletePermanentlyConfirmBody),
+                                    title:
+                                        Text(l.deletePermanentlyConfirmTitle),
+                                    content:
+                                        Text(l.deletePermanentlyConfirmBody),
                                     actions: [
                                       TextButton(
-                                          onPressed: () => Navigator.pop(ctx, false),
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, false),
                                           child: Text(l.cancel)),
                                       FilledButton(
                                         style: FilledButton.styleFrom(
-                                            backgroundColor:
-                                                Theme.of(ctx).colorScheme.error),
-                                        onPressed: () => Navigator.pop(ctx, true),
+                                            backgroundColor: Theme.of(ctx)
+                                                .colorScheme
+                                                .error),
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, true),
                                         child: Text(l.deletePermanently),
                                       ),
                                     ],

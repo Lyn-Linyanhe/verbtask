@@ -8,13 +8,15 @@ import '../../app/window_control.dart';
 import '../../core/notifications/app_notifications.dart';
 import '../../app/windows_tray.dart';
 import '../../app/autostart.dart';
+import '../../core/sync/background_sync.dart';
 
 class SettingsPage extends StatefulWidget {
   final SettingsController controller;
   final ValueChanged<Locale> onLocaleChanged;
   final File? backupFile;
   final File? csvFile;
-  final VoidCallback? onQuickSync;
+  final Future<void> Function()? onQuickSync;
+  final Future<void> Function()? onReminderSettingsChanged;
   final ValueChanged<ThemeMode>? onThemeModeChanged;
   final ThemeMode themeMode;
   const SettingsPage(
@@ -24,6 +26,7 @@ class SettingsPage extends StatefulWidget {
       this.backupFile,
       this.csvFile,
       this.onQuickSync,
+      this.onReminderSettingsChanged,
       this.onThemeModeChanged,
       this.themeMode = ThemeMode.system});
   @override
@@ -38,6 +41,8 @@ class _SettingsPageState extends State<SettingsPage> {
   late final TextEditingController _notifyMin;
   late final TextEditingController _syncToken;
   late ThemeMode _themeMode;
+  bool _fetchingModels = false;
+  bool _syncing = false;
 
   @override
   void initState() {
@@ -79,6 +84,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   /// 拉取 OpenAI 兼容接口的可用模型，供用户选择。
   Future<void> _fetchModels() async {
+    if (_fetchingModels) return;
     final c = widget.controller;
     final base = c.llmBaseUrl.trim();
     final key = c.llmKey.trim();
@@ -87,6 +93,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _snack(l.fillLlmConfigFirst);
       return;
     }
+    setState(() => _fetchingModels = true);
     try {
       final models = await LlmClient().listModels(
         LlmConfig(baseUrl: base, apiKey: key, model: c.llmModel.trim()),
@@ -117,6 +124,21 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     } catch (_) {
       if (mounted) _snack(l.fetchModelsFailed);
+    } finally {
+      if (mounted) setState(() => _fetchingModels = false);
+    }
+  }
+
+  Future<void> _runQuickSync() async {
+    final callback = widget.onQuickSync;
+    if (_syncing || callback == null) return;
+    setState(() => _syncing = true);
+    try {
+      await callback();
+    } catch (_) {
+      // The app-level callback records the detailed failure in settings.
+    } finally {
+      if (mounted) setState(() => _syncing = false);
     }
   }
 
@@ -238,8 +260,14 @@ class _SettingsPageState extends State<SettingsPage> {
                       labelText: l.modelLabel,
                       suffixIcon: IconButton(
                           tooltip: l.fetchModels,
-                          icon: const Icon(Icons.download_rounded, size: 20),
-                          onPressed: _fetchModels))),
+                          icon: _fetchingModels
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.download_rounded, size: 20),
+                          onPressed: _fetchingModels ? null : _fetchModels))),
             ])),
         _Section(
             title: l.syncAndReminders,
@@ -247,8 +275,11 @@ class _SettingsPageState extends State<SettingsPage> {
               _NumberField(
                   label: l.autoSyncIntervalMinutes,
                   controller: _syncMin,
-                  onChanged: (v) =>
-                      c.syncAutoIntervalMin = int.tryParse(v) ?? 30),
+                  onChanged: (v) {
+                    c.syncAutoIntervalMin = int.tryParse(v) ?? 30;
+                    unawaited(
+                        BackgroundSync.updateInterval(c.syncAutoIntervalMin));
+                  }),
               const SizedBox(height: 12),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
@@ -256,6 +287,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 value: c.notifyDefaultReminderEnabled,
                 onChanged: (v) {
                   setState(() => c.notifyDefaultReminderEnabled = v);
+                  unawaited(widget.onReminderSettingsChanged?.call());
                   if (v) {
                     unawaited(AppNotifications.ensureNotificationPermission());
                   }
@@ -269,6 +301,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     final parsed = int.tryParse(v);
                     if (parsed == null) return;
                     c.notifyDefaultOffsetMin = parsed == 0 ? 0 : -parsed.abs();
+                    unawaited(widget.onReminderSettingsChanged?.call());
                   }),
               const SizedBox(height: 12),
               Row(children: [
@@ -302,9 +335,36 @@ class _SettingsPageState extends State<SettingsPage> {
               SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                      onPressed: widget.onQuickSync ?? () {},
+                      onPressed: widget.onQuickSync == null || _syncing
+                          ? null
+                          : _runQuickSync,
                       icon: const Icon(Icons.sync_rounded),
                       label: Text(l.quickSync))),
+              const SizedBox(height: 8),
+              ListenableBuilder(
+                listenable: c,
+                builder: (context, _) {
+                  final status = switch (c.syncLastStatus) {
+                    'success' => l.syncSucceeded,
+                    'failed' => '${l.syncFailed}: ${c.syncLastError}',
+                    'syncing' => l.quickSync,
+                    _ => l.syncNotRun,
+                  };
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(status,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: c.syncLastStatus == 'failed'
+                                ? Theme.of(context).colorScheme.error
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant)),
+                  );
+                },
+              ),
             ])),
         _Section(
             title: l.pairing,
@@ -322,32 +382,43 @@ class _SettingsPageState extends State<SettingsPage> {
             ])),
         if (Platform.isWindows)
           _Section(
-            title: l.windowsSystem,
-            child: Column(children: [
-              SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l.keepInTray),
-                  value: c.trayEnabled,
-                  activeThumbColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (v) { setState(() => c.trayEnabled = v); WindowsTray.apply(v); }),
-              const Divider(height: 1),
-              SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l.launchAtStartup),
-                  value: c.autostartEnabled,
-                  activeThumbColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (v) { setState(() => c.autostartEnabled = v); Autostart.setEnabled(v); }),
-              const Divider(height: 1),
-              SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l.alwaysOnTop),
-                  value: c.alwaysOnTop,
-                  activeThumbColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (v) {
-                    setState(() => c.alwaysOnTop = v);
-                    WindowControl.setAlwaysOnTop(v);
-                  }),
-            ])),
+              title: l.windowsSystem,
+              child: Column(children: [
+                SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l.keepInTray),
+                    value: c.trayEnabled,
+                    activeThumbColor: Theme.of(context).colorScheme.primary,
+                    onChanged: (v) {
+                      setState(() => c.trayEnabled = v);
+                      WindowsTray.apply(v);
+                    }),
+                const Divider(height: 1),
+                SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l.launchAtStartup),
+                    value: c.autostartEnabled,
+                    activeThumbColor: Theme.of(context).colorScheme.primary,
+                    onChanged: (v) async {
+                      final ok = await Autostart.setEnabled(v);
+                      if (!mounted) return;
+                      if (ok) {
+                        setState(() => c.autostartEnabled = v);
+                      } else {
+                        _snack(l.autostartFailed);
+                      }
+                    }),
+                const Divider(height: 1),
+                SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l.alwaysOnTop),
+                    value: c.alwaysOnTop,
+                    activeThumbColor: Theme.of(context).colorScheme.primary,
+                    onChanged: (v) {
+                      setState(() => c.alwaysOnTop = v);
+                      WindowControl.setAlwaysOnTop(v);
+                    }),
+              ])),
         const SizedBox(height: 20),
       ]),
     );
@@ -392,9 +463,3 @@ class _NumberField extends StatelessWidget {
       onChanged: onChanged,
       decoration: InputDecoration(labelText: label));
 }
-
-
-
-
-
-
